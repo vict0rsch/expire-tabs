@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Expire Tabs History</title>
+        <link rel="stylesheet" href="style.css" />
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>Closed Tabs History</h1>
+                <button id="clear">Clear History</button>
+            </div>
+            <div class="search-container">
+                <input
+                    type="text"
+                    id="search"
+                    placeholder="Search history..."
+                />
+            </div>
+            <ul id="history-list">
+                <!-- History items will be injected here -->
+            </ul>
+        </div>
+        <script src="options.js" type="module"></script>
+    </body>
+</html>
