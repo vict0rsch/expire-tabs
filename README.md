@@ -1,6 +1,8 @@
 # expire-tabs
 
-A simple browser extension (Chrome & Firefox) that closes your tabs after they have been inactive for a specified amount of time. The timer resets whenever you focus a tab.
+A simple browser extension (Chrome & Firefox) that closes your tabs after they have been inactive for a specified amount of time. The timer resets whenever you use/focus a tab or when the tab is pinned.
+
+This extension was developed in part to add the "close tabs after inactivity" feature to [Zen](https://zen-browser.app) which is missing, coming from [Arc](https://arc.net).
 
 ## Features
 
@@ -10,18 +12,18 @@ Clicking the extension icon opens the settings popup where you can configure:
 
 -   **Timeout**: Set the duration of inactivity after which a tab should close.
     -   Supports **Minutes**, **Hours**, and **Days**.
--   **History Limit**: Set the maximum number of closed tabs to keep in history.
+-   **History Limit**: Set the maximum number of expired tabs to keep in history.
     -   Set to `-1` for infinite history.
     -   Tabs exceeding the limit are removed (oldest first).
--   **View Closed Tabs**: Quick access button to open the full history page.
--   **Protect Tab**: Toggle protection for the currently active tab. Protected tabs (indicated by a 🔒 badge) will **never** be auto-closed.
+-   **View Expired Tabs**: Quick access button to open the full history page.
+-   **Protect Tab**: Toggle protection for the currently active tab. Protected tabs (indicated by a 🔒 badge) will **never** be expired.
 
 ### 📜 History (Options Page)
 
-The options page provides a dashboard for your closed tabs:
+The options page provides a dashboard for your expired tabs:
 
 -   **Search**: Filter history by Title or URL. Multiple terms are treated as "AND" conditions (e.g., "git issue" matches items containing both "git" and "issue").
--   **Copy URL**: One-click button to copy the closed tab's URL to your clipboard.
+-   **Copy URL**: One-click button to copy the expired tab's URL to your clipboard.
 -   **Delete**: Remove individual items from your history.
 -   **Clear History**: Wipe all recorded history.
 

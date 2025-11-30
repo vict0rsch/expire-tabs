@@ -56,7 +56,7 @@ export const saveSettings = async (settings) => {
  * Retrieves closed tabs history from local storage.
  * @returns {Promise<ClosedTab[]>}
  */
-export const getClosedTabs = async () => {
+export const getExpiredTabs = async () => {
     return new Promise((resolve) => {
         chrome.storage.local.get(["closedTabs"], (result) => {
             resolve(result.closedTabs || []);
@@ -71,7 +71,7 @@ export const getClosedTabs = async () => {
  */
 export const addClosedTab = async (tabInfo) => {
     const { historyLimit } = await getSettings();
-    const tabs = await getClosedTabs();
+    const tabs = await getExpiredTabs();
 
     // Add ID to tabInfo if not present
     if (!tabInfo.id) {
@@ -104,8 +104,8 @@ export const addClosedTab = async (tabInfo) => {
  * @param {string} tabId
  * @returns {Promise<void>}
  */
-export const removeClosedTab = async (tabId) => {
-    const tabs = await getClosedTabs();
+export const removeExpiredTab = async (tabId) => {
+    const tabs = await getExpiredTabs();
     const newTabs = tabs.filter((t) => {
         // Ensure strict string comparison just in case
         return String(t.id) !== String(tabId);
@@ -121,7 +121,7 @@ export const removeClosedTab = async (tabId) => {
  * Clears all closed tabs history.
  * @returns {Promise<void>}
  */
-export const clearClosedTabs = async () => {
+export const clearExpiredTabs = async () => {
     return new Promise((resolve) => {
         chrome.storage.local.set({ closedTabs: [] }, () => {
             resolve();

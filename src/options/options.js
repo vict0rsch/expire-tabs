@@ -1,7 +1,7 @@
 import {
-    getClosedTabs,
-    clearClosedTabs,
-    removeClosedTab,
+    getExpiredTabs,
+    clearExpiredTabs,
+    removeExpiredTab,
 } from "../utils/storage.js";
 
 let allTabs = [];
@@ -74,7 +74,7 @@ const renderList = (tabsToRender) => {
                 const li = e.target.closest("li");
                 const id = li.dataset.id;
                 try {
-                    await removeClosedTab(id);
+                    await removeExpiredTab(id);
                     await loadAndRender();
                     const searchVal = document.getElementById("search").value;
                     if (searchVal) {
@@ -89,7 +89,7 @@ const renderList = (tabsToRender) => {
 };
 
 const loadAndRender = async () => {
-    allTabs = await getClosedTabs();
+    allTabs = await getExpiredTabs();
     renderList(allTabs);
 };
 
@@ -122,7 +122,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     document.getElementById("clear").addEventListener("click", async () => {
         if (confirm("Are you sure you want to clear history?")) {
-            await clearClosedTabs();
+            await clearExpiredTabs();
             await loadAndRender();
             document.getElementById("search").value = "";
         }

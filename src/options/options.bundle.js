@@ -10,7 +10,7 @@
      * Retrieves closed tabs history from local storage.
      * @returns {Promise<ClosedTab[]>}
      */
-    const getClosedTabs = async () => {
+    const getExpiredTabs = async () => {
         return new Promise((resolve) => {
             chrome.storage.local.get(["closedTabs"], (result) => {
                 resolve(result.closedTabs || []);
@@ -23,8 +23,8 @@
      * @param {string} tabId
      * @returns {Promise<void>}
      */
-    const removeClosedTab = async (tabId) => {
-        const tabs = await getClosedTabs();
+    const removeExpiredTab = async (tabId) => {
+        const tabs = await getExpiredTabs();
         const newTabs = tabs.filter((t) => {
             // Ensure strict string comparison just in case
             return String(t.id) !== String(tabId);
@@ -40,7 +40,7 @@
      * Clears all closed tabs history.
      * @returns {Promise<void>}
      */
-    const clearClosedTabs = async () => {
+    const clearExpiredTabs = async () => {
         return new Promise((resolve) => {
             chrome.storage.local.set({ closedTabs: [] }, () => {
                 resolve();
@@ -118,7 +118,7 @@
                     const li = e.target.closest("li");
                     const id = li.dataset.id;
                     try {
-                        await removeClosedTab(id);
+                        await removeExpiredTab(id);
                         await loadAndRender();
                         const searchVal = document.getElementById("search").value;
                         if (searchVal) {
@@ -133,7 +133,7 @@
     };
 
     const loadAndRender = async () => {
-        allTabs = await getClosedTabs();
+        allTabs = await getExpiredTabs();
         renderList(allTabs);
     };
 
@@ -166,7 +166,7 @@
 
         document.getElementById("clear").addEventListener("click", async () => {
             if (confirm("Are you sure you want to clear history?")) {
-                await clearClosedTabs();
+                await clearExpiredTabs();
                 await loadAndRender();
                 document.getElementById("search").value = "";
             }

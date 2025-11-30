@@ -21,10 +21,10 @@ global.chrome = chromeMock;
 import {
     getSettings,
     saveSettings,
-    getClosedTabs,
+    getExpiredTabs,
     addClosedTab,
-    clearClosedTabs,
-    removeClosedTab,
+    clearExpiredTabs,
+    removeExpiredTab,
 } from "../src/utils/storage.js";
 
 describe("Storage Utils", () => {
@@ -127,7 +127,7 @@ describe("Storage Utils", () => {
         });
     });
 
-    describe("removeClosedTab", () => {
+    describe("removeExpiredTab", () => {
         it("should remove a tab by ID", async () => {
             const tabs = [
                 { id: "1", title: "Tab 1" },
@@ -137,7 +137,7 @@ describe("Storage Utils", () => {
             chromeMock.storage.local.get.yields({ closedTabs: tabs });
             chromeMock.storage.local.set.yields();
 
-            await removeClosedTab("2");
+            await removeExpiredTab("2");
 
             const savedTabs =
                 chromeMock.storage.local.set.firstCall.args[0].closedTabs;
@@ -146,10 +146,10 @@ describe("Storage Utils", () => {
         });
     });
 
-    describe("clearClosedTabs", () => {
+    describe("clearExpiredTabs", () => {
         it("should clear history", async () => {
             chromeMock.storage.local.set.yields();
-            await clearClosedTabs();
+            await clearExpiredTabs();
             expect(chromeMock.storage.local.set.calledWith({ closedTabs: [] }))
                 .to.be.true;
         });

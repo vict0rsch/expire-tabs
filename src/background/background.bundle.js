@@ -46,7 +46,7 @@
      * Retrieves closed tabs history from local storage.
      * @returns {Promise<ClosedTab[]>}
      */
-    const getClosedTabs = async () => {
+    const getExpiredTabs = async () => {
         return new Promise((resolve) => {
             chrome.storage.local.get(["closedTabs"], (result) => {
                 resolve(result.closedTabs || []);
@@ -61,7 +61,7 @@
      */
     const addClosedTab = async (tabInfo) => {
         const { historyLimit } = await getSettings();
-        const tabs = await getClosedTabs();
+        const tabs = await getExpiredTabs();
 
         // Add ID to tabInfo if not present
         if (!tabInfo.id) {
