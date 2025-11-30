@@ -14,6 +14,7 @@ Clicking the extension icon opens the settings popup where you can configure:
     -   Set to `-1` for infinite history.
     -   Tabs exceeding the limit are removed (oldest first).
 -   **View Closed Tabs**: Quick access button to open the full history page.
+-   **Protect Tab**: Toggle protection for the currently active tab. Protected tabs (indicated by a 🔒 badge) will **never** be auto-closed.
 
 ### 📜 History (Options Page)
 

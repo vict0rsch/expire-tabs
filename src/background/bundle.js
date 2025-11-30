@@ -1,6 +1,29 @@
 (function () {
     'use strict';
 
+    /**
+     * Storage utility functions for Expire Tabs extension.
+     */
+
+    /**
+     * @typedef {Object} Settings
+     * @property {number} timeout - Timeout value
+     * @property {string} unit - Time unit (minutes, hours, days)
+     * @property {number} historyLimit - Number of closed tabs to keep
+     */
+
+    /**
+     * @typedef {Object} ClosedTab
+     * @property {string} id - Unique ID
+     * @property {string} title - Tab title
+     * @property {string} url - Tab URL
+     * @property {number} closedAt - Timestamp when closed
+     */
+
+    /**
+     * Retrieves settings from sync storage.
+     * @returns {Promise<Settings>}
+     */
     const getSettings = async () => {
         return new Promise((resolve) => {
             chrome.storage.sync.get(
@@ -19,6 +42,10 @@
         });
     };
 
+    /**
+     * Retrieves closed tabs history from local storage.
+     * @returns {Promise<ClosedTab[]>}
+     */
     const getClosedTabs = async () => {
         return new Promise((resolve) => {
             chrome.storage.local.get(["closedTabs"], (result) => {
@@ -27,12 +54,23 @@
         });
     };
 
+    /**
+     * Adds a tab to the closed tabs history.
+     * @param {Object} tabInfo
+     * @returns {Promise<void>}
+     */
     const addClosedTab = async (tabInfo) => {
         const { historyLimit } = await getSettings();
         const tabs = await getClosedTabs();
-        // Add ID to tabInfo if not present, useful for deletion
+        
+        // Add ID to tabInfo if not present
         if (!tabInfo.id) {
-            tabInfo.id = Date.now() + Math.random().toString(36).substr(2, 9);
+            if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+                tabInfo.id = crypto.randomUUID();
+            } else {
+                // Fallback for environments without randomUUID
+                tabInfo.id = Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+            }
         }
 
         tabs.unshift(tabInfo);
@@ -49,9 +87,25 @@
         });
     };
 
+    /**
+     * Generates storage key for a tab's activity timestamp.
+     * @param {number} tabId
+     * @returns {string}
+     */
     const getTabKey = (tabId) => `tab_${tabId}`;
+
+    /**
+     * Generates storage key for a tab's protection status.
+     * @param {number} tabId
+     * @returns {string}
+     */
     const getProtectedKey = (tabId) => `protected_${tabId}`;
 
+    /**
+     * Checks if a tab is protected.
+     * @param {number} tabId
+     * @returns {Promise<boolean>}
+     */
     const getTabProtection = async (tabId) => {
         const key = getProtectedKey(tabId);
         return new Promise((resolve) => {
@@ -60,6 +114,103 @@
             });
         });
     };
+
+    async function checkTabs() {
+        const { timeout, unit } = await getSettings();
+
+        let multiplier = 60 * 1000; // default minutes
+        if (unit === "hours") {
+            multiplier = 60 * 60 * 1000;
+        } else if (unit === "days") {
+            multiplier = 24 * 60 * 60 * 1000;
+        }
+
+        const timeoutMs = timeout * multiplier;
+        const now = Date.now();
+
+        const tabs = await chrome.tabs.query({});
+
+        // Optimize: Fetch all storage data at once
+        const keysToFetch = [];
+        const tabsToCheck = [];
+
+        for (const tab of tabs) {
+            if (tab.pinned) continue;
+            if (tab.audible) continue; // Don't close if playing audio
+
+            const key = getTabKey(tab.id);
+            const protectedKey = getProtectedKey(tab.id);
+            
+            keysToFetch.push(key, protectedKey);
+            tabsToCheck.push({ tab, key, protectedKey });
+        }
+
+        if (keysToFetch.length === 0) return;
+
+        const storedData = await chrome.storage.local.get(keysToFetch);
+        const updates = {};
+
+        for (const { tab, key, protectedKey } of tabsToCheck) {
+            // Check if protected
+            if (storedData[protectedKey]) {
+                continue; // Tab is protected, skip
+            }
+
+            if (tab.active) {
+                // It's active now, update timestamp
+                updates[key] = now;
+                continue;
+            }
+
+            let lastActive = storedData[key];
+
+            if (!lastActive) {
+                // Start tracking from now
+                lastActive = now;
+                updates[key] = now;
+            }
+
+            if (now - lastActive > timeoutMs) {
+                // Expired
+                await closeTab(tab);
+            }
+        }
+
+        if (Object.keys(updates).length > 0) {
+            await chrome.storage.local.set(updates);
+        }
+    }
+
+    async function closeTab(tab) {
+        try {
+            // Add to history first
+            await addClosedTab({
+                title: tab.title,
+                url: tab.url,
+                closedAt: Date.now(),
+            });
+
+            await chrome.tabs.remove(tab.id);
+        } catch (err) {
+            console.error(`Failed to close tab ${tab.id}:`, err);
+        }
+    }
+
+    async function updateBadge(tabId) {
+        try {
+            const isProtected = await getTabProtection(tabId);
+            const text = isProtected ? "🔒" : "";
+            await chrome.action.setBadgeText({ tabId, text });
+            if (isProtected) {
+                await chrome.action.setBadgeBackgroundColor({
+                    tabId,
+                    color: "#5dc162",
+                });
+            }
+        } catch (err) {
+            // Tab might be closed
+        }
+    }
 
     const ALARM_NAME = "check_tabs";
 
@@ -115,86 +266,5 @@
             await checkTabs();
         }
     });
-
-    async function checkTabs() {
-        const { timeout, unit } = await getSettings();
-
-        let multiplier = 60 * 1000; // default minutes
-        if (unit === "hours") {
-            multiplier = 60 * 60 * 1000;
-        } else if (unit === "days") {
-            multiplier = 24 * 60 * 60 * 1000;
-        }
-
-        const timeoutMs = timeout * multiplier;
-        const now = Date.now();
-
-        const tabs = await chrome.tabs.query({});
-
-        for (const tab of tabs) {
-            if (tab.pinned) continue;
-            if (tab.audible) continue; // Don't close if playing audio
-
-            const key = getTabKey(tab.id);
-            const protectedKey = getProtectedKey(tab.id);
-
-            // Check if protected
-            const storedData = await chrome.storage.local.get([key, protectedKey]);
-            if (storedData[protectedKey]) {
-                continue; // Tab is protected, skip
-            }
-
-            if (tab.active) {
-                // It's active now, update timestamp
-                await chrome.storage.local.set({ [key]: now });
-                continue;
-            }
-
-            let lastActive = storedData[key];
-
-            if (!lastActive) {
-                // Start tracking from now
-                lastActive = now;
-                await chrome.storage.local.set({ [key]: now });
-            }
-
-            if (now - lastActive > timeoutMs) {
-                // Expired
-                await closeTab(tab);
-            }
-        }
-    }
-
-    async function closeTab(tab) {
-        try {
-            // Add to history first
-            await addClosedTab({
-                title: tab.title,
-                url: tab.url,
-                closedAt: Date.now(),
-            });
-
-            await chrome.tabs.remove(tab.id);
-            console.log(`Closed tab: ${tab.title}`);
-        } catch (err) {
-            console.error(`Failed to close tab ${tab.id}:`, err);
-        }
-    }
-
-    async function updateBadge(tabId) {
-        try {
-            const isProtected = await getTabProtection(tabId);
-            const text = isProtected ? "🔒" : "";
-            await chrome.action.setBadgeText({ tabId, text });
-            if (isProtected) {
-                await chrome.action.setBadgeBackgroundColor({
-                    tabId,
-                    color: "#5dc162",
-                });
-            }
-        } catch (err) {
-            // Tab might be closed
-        }
-    }
 
 })();
