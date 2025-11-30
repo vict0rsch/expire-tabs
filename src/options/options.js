@@ -7,8 +7,8 @@ import {
 let allTabs = [];
 let currentTabsToRender = [];
 let renderedCount = 0;
-const BATCH_SIZE = 10;
-const LOAD_MARGIN = 2;
+const BATCH_SIZE = 20;
+const LOAD_MARGIN = 5;
 let observer = null;
 
 const escapeHtml = (unsafe) => {
