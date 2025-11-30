@@ -1,4 +1,9 @@
-import { getSettings, saveSettings } from "../utils/storage.js";
+import {
+    getSettings,
+    saveSettings,
+    getTabProtection,
+    setTabProtection,
+} from "../utils/storage.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
     const timeoutInput = document.getElementById("timeout");
@@ -7,12 +12,43 @@ document.addEventListener("DOMContentLoaded", async () => {
     const saveButton = document.getElementById("save");
     const historyButton = document.getElementById("history");
     const status = document.getElementById("status");
+    const protectBtn = document.getElementById("protect-toggle");
 
     // Load current settings
     const settings = await getSettings();
     timeoutInput.value = settings.timeout;
     unitInput.value = settings.unit;
     historyLimitInput.value = settings.historyLimit;
+
+    // Handle Protection Button
+    const [tab] = await chrome.tabs.query({
+        active: true,
+        currentWindow: true,
+    });
+
+    if (tab) {
+        const updateButton = async () => {
+            const isProtected = await getTabProtection(tab.id);
+            if (isProtected) {
+                protectBtn.textContent = "Protected 🔒";
+                protectBtn.classList.remove("secondary");
+            } else {
+                protectBtn.textContent = "Protect Tab 🛡️";
+                protectBtn.classList.add("secondary");
+            }
+            return isProtected;
+        };
+
+        await updateButton();
+
+        protectBtn.addEventListener("click", async () => {
+            const isProtected = await getTabProtection(tab.id);
+            await setTabProtection(tab.id, !isProtected);
+            await updateButton();
+        });
+    } else {
+        protectBtn.style.display = "none";
+    }
 
     // Save setting
     saveButton.addEventListener("click", async () => {

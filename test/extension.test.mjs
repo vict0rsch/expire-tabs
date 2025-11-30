@@ -194,4 +194,77 @@ describe("Expire Tabs Extension E2E", function () {
         const text = await page.evaluate((el) => el.textContent, itemsAfter[0]);
         assert.ok(text.includes("No matching"), "Should show empty message");
     });
+
+    it("should protect and unprotect a tab", async function () {
+        const popupUrl = `chrome-extension://${extensionId}/popup/popup.html`;
+        page = await browser.newPage();
+        await page.goto(popupUrl);
+
+        // Wait for protect button
+        await page.waitForSelector("#protect-toggle");
+
+        // Initial state: "Protect Tab" (unprotected)
+        let btnText = await page.$eval("#protect-toggle", (el) =>
+            el.textContent.trim()
+        );
+        assert.ok(
+            btnText.includes("Protect Tab"),
+            "Initial state should be 'Protect Tab'"
+        );
+
+        // Click to protect
+        await page.click("#protect-toggle");
+
+        // Wait for text change
+        await page.waitForFunction(() => {
+            const btn = document.querySelector("#protect-toggle");
+            return btn.textContent.includes("Protected");
+        });
+
+        btnText = await page.$eval("#protect-toggle", (el) => el.textContent);
+        assert.ok(btnText.includes("Protected"), "State should be 'Protected'");
+
+        // Verify in storage
+        const isProtectedInStorage = await page.evaluate(async () => {
+            const [tab] = await chrome.tabs.query({
+                active: true,
+                currentWindow: true,
+            });
+            const key = `protected_${tab.id}`;
+            return new Promise((resolve) => {
+                chrome.storage.local.get([key], (res) => resolve(!!res[key]));
+            });
+        });
+        assert.strictEqual(
+            isProtectedInStorage,
+            true,
+            "Storage should have protection key"
+        );
+
+        // Click to unprotect
+        await page.click("#protect-toggle");
+
+        // Wait for text change
+        await page.waitForFunction(() => {
+            const btn = document.querySelector("#protect-toggle");
+            return btn.textContent.includes("Protect Tab");
+        });
+
+        // Verify storage cleared
+        const isProtectedAfter = await page.evaluate(async () => {
+            const [tab] = await chrome.tabs.query({
+                active: true,
+                currentWindow: true,
+            });
+            const key = `protected_${tab.id}`;
+            return new Promise((resolve) => {
+                chrome.storage.local.get([key], (res) => resolve(!!res[key]));
+            });
+        });
+        assert.strictEqual(
+            isProtectedAfter,
+            false,
+            "Storage should NOT have protection key"
+        );
+    });
 });

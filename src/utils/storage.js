@@ -74,3 +74,31 @@ export const clearClosedTabs = async () => {
         });
     });
 };
+
+export const getTabKey = (tabId) => `tab_${tabId}`;
+export const getProtectedKey = (tabId) => `protected_${tabId}`;
+
+export const getTabProtection = async (tabId) => {
+    const key = getProtectedKey(tabId);
+    return new Promise((resolve) => {
+        chrome.storage.local.get([key], (result) => {
+            resolve(!!result[key]);
+        });
+    });
+};
+
+export const setTabProtection = async (tabId, isProtected) => {
+    const protectedKey = getProtectedKey(tabId);
+    const tabKey = getTabKey(tabId);
+
+    return new Promise((resolve) => {
+        if (isProtected) {
+            chrome.storage.local.set({ [protectedKey]: true }, resolve);
+        } else {
+            // Unprotecting: Remove protection AND reset timestamp
+            chrome.storage.local.remove(protectedKey, () => {
+                chrome.storage.local.set({ [tabKey]: Date.now() }, resolve);
+            });
+        }
+    });
+};

@@ -68,6 +68,11 @@ button:hover {
 button.secondary {
     background-color: var(--secondary-color);
 }
+button.secondary-outline {
+    background-color: transparent;
+    border: 2px solid var(--secondary-color);
+    color: var(--secondary-color);
+}
 
 button.secondary:hover {
     background-color: var(--secondary-color-hover);

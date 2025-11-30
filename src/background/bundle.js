@@ -49,6 +49,18 @@
         });
     };
 
+    const getTabKey = (tabId) => `tab_${tabId}`;
+    const getProtectedKey = (tabId) => `protected_${tabId}`;
+
+    const getTabProtection = async (tabId) => {
+        const key = getProtectedKey(tabId);
+        return new Promise((resolve) => {
+            chrome.storage.local.get([key], (result) => {
+                resolve(!!result[key]);
+            });
+        });
+    };
+
     const ALARM_NAME = "check_tabs";
 
     // Setup alarm on install/startup
@@ -60,13 +72,11 @@
         chrome.alarms.create(ALARM_NAME, { periodInMinutes: 1 });
     });
 
-    // Helper to get tab key
-    const getTabKey = (tabId) => `tab_${tabId}`;
-
     // When a tab is activated, update its last active time
     chrome.tabs.onActivated.addListener(async (activeInfo) => {
         const key = getTabKey(activeInfo.tabId);
         await chrome.storage.local.set({ [key]: Date.now() });
+        updateBadge(activeInfo.tabId);
     });
 
     // When a tab is updated (e.g. loaded), update its timestamp
@@ -74,13 +84,29 @@
         if (changeInfo.status === "complete") {
             const key = getTabKey(tabId);
             await chrome.storage.local.set({ [key]: Date.now() });
+            updateBadge(tabId);
         }
     });
 
     // Clean up when tab is removed
     chrome.tabs.onRemoved.addListener(async (tabId) => {
         const key = getTabKey(tabId);
-        await chrome.storage.local.remove(key);
+        const protectedKey = getProtectedKey(tabId);
+        await chrome.storage.local.remove([key, protectedKey]);
+    });
+
+    // Listen for storage changes to update badge
+    chrome.storage.onChanged.addListener((changes, area) => {
+        if (area === "local") {
+            for (const key of Object.keys(changes)) {
+                if (key.startsWith("protected_")) {
+                    const tabId = parseInt(key.replace("protected_", ""), 10);
+                    if (!isNaN(tabId)) {
+                        updateBadge(tabId);
+                    }
+                }
+            }
+        }
     });
 
     // Check tabs
@@ -106,13 +132,17 @@
         const tabs = await chrome.tabs.query({});
 
         for (const tab of tabs) {
-            // Skip pinned tabs or audio playing tabs if desired?
-            // Requirement says "closes your tabs after some time".
-            // Usually people don't want pinned tabs closed. I'll add a check for pinned.
             if (tab.pinned) continue;
             if (tab.audible) continue; // Don't close if playing audio
 
             const key = getTabKey(tab.id);
+            const protectedKey = getProtectedKey(tab.id);
+
+            // Check if protected
+            const storedData = await chrome.storage.local.get([key, protectedKey]);
+            if (storedData[protectedKey]) {
+                continue; // Tab is protected, skip
+            }
 
             if (tab.active) {
                 // It's active now, update timestamp
@@ -120,9 +150,7 @@
                 continue;
             }
 
-            // Check stored timestamp
-            const result = await chrome.storage.local.get([key]);
-            let lastActive = result[key];
+            let lastActive = storedData[key];
 
             if (!lastActive) {
                 // Start tracking from now
@@ -146,13 +174,26 @@
                 closedAt: Date.now(),
             });
 
-            // Remove from storage (handled by onRemoved, but good to be explicit or let onRemoved handle it)
-            // We rely on onRemoved to clean up storage.
-
             await chrome.tabs.remove(tab.id);
             console.log(`Closed tab: ${tab.title}`);
         } catch (err) {
             console.error(`Failed to close tab ${tab.id}:`, err);
+        }
+    }
+
+    async function updateBadge(tabId) {
+        try {
+            const isProtected = await getTabProtection(tabId);
+            const text = isProtected ? "🔒" : "";
+            await chrome.action.setBadgeText({ tabId, text });
+            if (isProtected) {
+                await chrome.action.setBadgeBackgroundColor({
+                    tabId,
+                    color: "#5dc162",
+                });
+            }
+        } catch (err) {
+            // Tab might be closed
         }
     }
 
