@@ -1,5 +1,6 @@
 .DS_Store
 .todo
+.vscode
 
 # Logs
 logs
