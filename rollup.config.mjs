@@ -4,7 +4,7 @@ export default [
     {
         input: "src/popup/popup.js",
         output: {
-            file: "src/popup/bundle.js",
+            file: "src/popup/popup.bundle.js",
             format: "iife",
             name: "popup",
         },
@@ -13,9 +13,18 @@ export default [
     {
         input: "src/background/main.js",
         output: {
-            file: "src/background/bundle.js",
+            file: "src/background/background.bundle.js",
             format: "iife",
             name: "background",
+        },
+        plugins: [resolve()],
+    },
+    {
+        input: "src/options/options.js",
+        output: {
+            file: "src/options/options.bundle.js",
+            format: "iife",
+            name: "options",
         },
         plugins: [resolve()],
     },

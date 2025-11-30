@@ -62,14 +62,16 @@
     const addClosedTab = async (tabInfo) => {
         const { historyLimit } = await getSettings();
         const tabs = await getClosedTabs();
-        
+
         // Add ID to tabInfo if not present
         if (!tabInfo.id) {
-            if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+            if (typeof crypto !== "undefined" && crypto.randomUUID) {
                 tabInfo.id = crypto.randomUUID();
             } else {
                 // Fallback for environments without randomUUID
-                tabInfo.id = Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+                tabInfo.id =
+                    Date.now().toString(36) +
+                    Math.random().toString(36).substr(2, 9);
             }
         }
 
@@ -115,6 +117,11 @@
         });
     };
 
+    /**
+     * Checks all tabs and closes them if they have expired.
+     * Fetches storage data in bulk to optimize performance.
+     * @returns {Promise<void>}
+     */
     async function checkTabs() {
         const { timeout, unit } = await getSettings();
 
@@ -140,7 +147,7 @@
 
             const key = getTabKey(tab.id);
             const protectedKey = getProtectedKey(tab.id);
-            
+
             keysToFetch.push(key, protectedKey);
             tabsToCheck.push({ tab, key, protectedKey });
         }
@@ -181,6 +188,11 @@
         }
     }
 
+    /**
+     * Closes a specific tab and adds it to history.
+     * @param {chrome.tabs.Tab} tab
+     * @returns {Promise<void>}
+     */
     async function closeTab(tab) {
         try {
             // Add to history first
@@ -196,6 +208,11 @@
         }
     }
 
+    /**
+     * Updates the badge for a specific tab (shows lock icon if protected).
+     * @param {number} tabId
+     * @returns {Promise<void>}
+     */
     async function updateBadge(tabId) {
         try {
             const isProtected = await getTabProtection(tabId);

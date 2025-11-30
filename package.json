@@ -4,12 +4,12 @@
     "description": "A simple browser (Chrome & Firefox) that closes your tabs after some time. The time taken into account is the time since the tab was last opened / focused.",
     "main": "src/background/main.js",
     "scripts": {
-        "build:popup": "rollup -c rollup.config.mjs",
-        "watch:popup": "rollup -c rollup.config.mjs -w",
-        "dev": "concurrently \"npm run watch:popup\" \"extension dev src --browser=chrome\"",
-        "build": "npm run build:popup && extension build src --browser=chrome && extension build src --browser=firefox",
-        "start": "npm run build:popup && extension start src",
-        "pretest": "npm run build:popup",
+        "build:js": "rollup -c rollup.config.mjs",
+        "watch:js": "rollup -c rollup.config.mjs -w",
+        "dev": "concurrently \"npm run watch:js\" \"extension dev src --browser=chrome\"",
+        "build": "npm run build:js && extension build src --browser=chrome && extension build src --browser=firefox",
+        "start": "npm run build:js && extension start src",
+        "pretest": "npm run build:js",
         "test": "mocha test/**/*.mjs"
     },
     "repository": {
