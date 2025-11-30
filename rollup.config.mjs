@@ -18,14 +18,14 @@ const triggerExtensionBuild = () => {
                 const command =
                     'concurrently "extension build src --browser=chrome" "extension build src --browser=firefox"';
 
-                console.log(`\n📦 Triggering extension build...`);
+                console.log(`\n📦 Triggering extension build...\n`);
                 // Use shell: true for command chaining with &&
                 const child = spawn(command, { stdio: "inherit", shell: true });
 
                 child.on("close", (code) => {
                     if (code === 0) {
                         console.log(
-                            "✅ Extension build completed successfully"
+                            `\n✅ Extension build completed successfully at ${new Date().toLocaleTimeString()}\n`
                         );
                     } else {
                         console.error(
