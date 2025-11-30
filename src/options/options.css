@@ -11,20 +11,6 @@ h1 {
     padding-bottom: 10px;
 }
 
-button#clear {
-    background-color: #dc3545;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 8px;
-    cursor: pointer;
-    float: right;
-}
-
-button#clear:hover {
-    background-color: #c82333;
-}
-
 .container {
     max-width: 1000px;
     margin: 0 auto;
@@ -34,6 +20,7 @@ button#clear:hover {
 .search-container {
     margin-top: 20px;
     margin-bottom: 10px;
+    gap: 10px;
 }
 
 #search {
@@ -105,6 +92,17 @@ li .actions {
     align-items: center;
 }
 
+#form-container input,
+#form-container select,
+#form-container button {
+    height: 37px;
+    padding: 0 10px;
+}
+#form-container input,
+#form-container select {
+    color: white;
+}
+
 .icon-btn {
     background: none;
     border: 1px solid #ccc;
@@ -143,6 +141,7 @@ li .actions {
 
 .copy-btn {
     width: 72px;
+    font-weight: initial;
 }
 
 li .time {
@@ -160,16 +159,6 @@ li .time {
     display: flex;
     justify-content: space-between;
     align-items: center;
-}
-
-.header button {
-    background-color: #dc3545;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 8px;
-    cursor: pointer;
-    max-height: 40px;
 }
 
 ::placeholder {

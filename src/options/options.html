@@ -17,15 +17,46 @@
         <div class="container">
             <div class="header">
                 <h1>Expired Tabs History 🗃️</h1>
-                <button id="clear">Clear History 🧹</button>
+                <button id="downloadHistory" class="primary">
+                    Download History as JSON 📥
+                </button>
             </div>
-            <div class="search-container">
-                <input
-                    type="text"
-                    id="search"
-                    placeholder="Search history 🔍"
-                    aria-label="Search history"
-                />
+            <div id="form-container">
+                <div class="form-group">
+                    <label for="deleteOlderThan">Delete older than:</label>
+                    <div class="input-group" style="gap: 10px">
+                        <input
+                            type="number"
+                            id="deleteOlderThan"
+                            min="1"
+                            placeholder="e.g. 30"
+                        />
+                        <select id="unit">
+                            <option value="minutes">Minutes</option>
+                            <option value="hours">Hours</option>
+                            <option value="days">Days</option>
+                        </select>
+                        <button
+                            class="secondary-outline"
+                            id="deleteOlderThanButton"
+                            disabled
+                        >
+                            Delete <span id="oldEntriesCount"></span> Old
+                            Entries
+                        </button>
+                    </div>
+                </div>
+                <div class="search-container input-group">
+                    <input
+                        type="text"
+                        id="search"
+                        placeholder="Search history 🔍"
+                        aria-label="Search history"
+                    />
+                    <button class="secondary-outline" id="deleteSearchResults">
+                        Delete Search Results (<span id="results-count"></span>)
+                    </button>
+                </div>
             </div>
             <ul id="history-list">
                 <!-- History items will be injected here -->

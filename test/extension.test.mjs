@@ -1,78 +1,22 @@
-import puppeteer from "puppeteer";
 import assert from "assert";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const EXTENSION_PATH = path.join(__dirname, "../src");
+import {
+    launchBrowser,
+    getExtensionId,
+    seedStorage,
+    loadTestData,
+} from "./testUtils.mjs";
 
 describe("Expire Tabs Extension E2E", function () {
     this.timeout(60000);
     let browser;
     let page;
     let extensionId;
+    let testData;
 
     before(async function () {
-        browser = await puppeteer.launch({
-            headless: "new",
-            args: [
-                `--disable-extensions-except=${EXTENSION_PATH}`,
-                `--load-extension=${EXTENSION_PATH}`,
-                "--no-sandbox",
-                "--disable-setuid-sandbox",
-            ],
-        });
-
-        // Strategy: Go to chrome://extensions to find the ID
-        const extensionPage = await browser.newPage();
-        await extensionPage.goto("chrome://extensions");
-        await extensionPage.waitForSelector("extensions-manager");
-
-        extensionId = await extensionPage.evaluate(async () => {
-            const findId = () => {
-                const manager = document.querySelector("extensions-manager");
-                if (!manager || !manager.shadowRoot) return null;
-
-                const getItems = (root) => {
-                    let items = [];
-                    const children = root.querySelectorAll("*");
-                    for (const child of children) {
-                        if (child.tagName === "EXTENSIONS-ITEM") {
-                            items.push(child);
-                        }
-                        if (child.shadowRoot) {
-                            items = items.concat(getItems(child.shadowRoot));
-                        }
-                    }
-                    return items;
-                };
-
-                const items = getItems(manager.shadowRoot);
-                for (const item of items) {
-                    const nameEl =
-                        item.shadowRoot &&
-                        item.shadowRoot.querySelector("#name");
-                    if (nameEl && nameEl.textContent.trim() === "Expire Tabs") {
-                        return item.id;
-                    }
-                }
-                return null;
-            };
-
-            return new Promise((resolve) => {
-                const check = () => {
-                    const id = findId();
-                    if (id) {
-                        resolve(id);
-                    } else {
-                        setTimeout(check, 100);
-                    }
-                };
-                check();
-            });
-        });
-
-        await extensionPage.close();
+        browser = await launchBrowser();
+        extensionId = await getExtensionId(browser);
+        testData = loadTestData();
     });
 
     after(async function () {
@@ -105,9 +49,9 @@ describe("Expire Tabs Extension E2E", function () {
         const searchInput = await page.$("#search");
         assert.ok(searchInput, "Search input should exist");
 
-        // Check for clear button
-        const clearBtn = await page.$("#clear");
-        assert.ok(clearBtn, "Clear button should exist");
+        // Check for download button
+        const downloadBtn = await page.$("#downloadHistory");
+        assert.ok(downloadBtn, "Download button should exist");
     });
 
     it("should delete an item from history", async function () {
@@ -120,24 +64,17 @@ describe("Expire Tabs Extension E2E", function () {
         // Navigate to options page first to set context
         await page.goto(optionsUrl);
 
-        // Seed data using chrome.storage directly in the extension context
-        await page.evaluate(async () => {
-            const existing = await new Promise((resolve) =>
-                chrome.storage.local.get(["expiredTabs"], (r) =>
-                    resolve(r.expiredTabs || [])
-                )
-            );
-            // Add specific item to ensure we can identify/delete it
-            existing.unshift({
-                id: "delete-test-id",
-                title: "Delete Me",
-                url: "http://delete.me",
-                closedAt: Date.now(),
-            });
-            await new Promise((resolve) =>
-                chrome.storage.local.set({ expiredTabs: existing }, resolve)
-            );
-        });
+        // Seed data from JSON + our specific test item
+        const expiredTabs = [...testData.expiredTabs];
+        const testItem = {
+            id: "delete-test-id",
+            title: "Delete Me",
+            url: "http://delete.me",
+            closedAt: Date.now(),
+        };
+        expiredTabs.unshift(testItem);
+
+        await seedStorage(page, { expiredTabs });
 
         await page.reload(); // Ensure fresh render with seeded data
 
@@ -177,22 +114,28 @@ describe("Expire Tabs Extension E2E", function () {
         await page.click("#history-list li:first-child .delete-btn");
 
         // Wait for list to update
+        // We wait until the first item is NOT the one we deleted
         await page.waitForFunction(
-            () => {
-                const lis = document.querySelectorAll("#history-list li");
-                // If "No matching..." message is shown, it has no .delete-btn
-                if (lis.length === 1 && !lis[0].querySelector(".delete-btn"))
-                    return true;
-                // Or if we have actual items, check if they are different (not robust if we only had 1)
-                return false;
+            (deletedId) => {
+                const firstItem = document.querySelector(
+                    "#history-list li:first-child"
+                );
+                // If list is empty or first item is different
+                return !firstItem || firstItem.dataset.id !== deletedId;
             },
-            { timeout: 5000 }
+            { timeout: 5000 },
+            firstItemId
         );
 
         const itemsAfter = await page.$$("#history-list li");
-        // Verify the "No matching" message
-        const text = await page.evaluate((el) => el.textContent, itemsAfter[0]);
-        assert.ok(text.includes("No matching"), "Should show empty message");
+        // Verify the first item is now the second one from our list (or different)
+        if (itemsAfter.length > 0) {
+            const text = await page.evaluate(
+                (el) => el.querySelector(".title")?.textContent,
+                itemsAfter[0]
+            );
+            assert.notStrictEqual(text, "Delete Me", "Item should be deleted");
+        }
     });
 
     it("should protect and unprotect a tab", async function () {

@@ -41,3 +41,83 @@ select {
     padding: 8px;
     color: #333;
 }
+
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.input-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.input-group input {
+    flex: 1;
+}
+
+.input-group select {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+}
+
+label {
+    font-size: 1rem;
+}
+
+input {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+}
+
+button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+button:hover {
+    background-color: var(--primary-color-hover);
+}
+
+button.secondary {
+    background-color: var(--secondary-color);
+}
+button.secondary-outline {
+    background-color: transparent;
+    border: 2px solid var(--secondary-color);
+    color: var(--secondary-color);
+}
+
+button.secondary-outline:hover {
+    background-color: var(--secondary-color);
+    color: white;
+}
+button.secondary:hover {
+    background-color: var(--secondary-color-hover);
+}
+
+button:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+}
+
+button:disabled:hover {
+    background-color: #6c757d;
+    cursor: not-allowed;
+    color: var(--secondary-color);
+}
