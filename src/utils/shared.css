@@ -15,8 +15,8 @@ body {
     padding: 16px;
     margin: 0;
     background-color: var(--background-color);
-    width: 100vw;
     color: #dfdaf9;
+    box-sizing: border-box;
 }
 
 h1,
