@@ -1,6 +1,6 @@
 import {
     getSettings,
-    addClosedTab,
+    addExpiredTab,
     getTabKey,
     getProtectedKey,
     getTabProtection,
@@ -85,7 +85,7 @@ export async function checkTabs() {
 export async function closeTab(tab) {
     try {
         // Add to history first
-        await addClosedTab({
+        await addExpiredTab({
             title: tab.title,
             url: tab.url,
             closedAt: Date.now(),

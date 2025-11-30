@@ -123,8 +123,8 @@ describe("Expire Tabs Extension E2E", function () {
         // Seed data using chrome.storage directly in the extension context
         await page.evaluate(async () => {
             const existing = await new Promise((resolve) =>
-                chrome.storage.local.get(["closedTabs"], (r) =>
-                    resolve(r.closedTabs || [])
+                chrome.storage.local.get(["expiredTabs"], (r) =>
+                    resolve(r.expiredTabs || [])
                 )
             );
             // Add specific item to ensure we can identify/delete it
@@ -135,7 +135,7 @@ describe("Expire Tabs Extension E2E", function () {
                 closedAt: Date.now(),
             });
             await new Promise((resolve) =>
-                chrome.storage.local.set({ closedTabs: existing }, resolve)
+                chrome.storage.local.set({ expiredTabs: existing }, resolve)
             );
         });
 

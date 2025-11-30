@@ -13,7 +13,7 @@
      */
 
     /**
-     * @typedef {Object} ClosedTab
+     * @typedef {Object} ExpiredTab
      * @property {string} id - Unique ID
      * @property {string} title - Tab title
      * @property {string} url - Tab URL
@@ -25,33 +25,21 @@
      * @returns {Promise<Settings>}
      */
     const getSettings = async () => {
-        return new Promise((resolve) => {
-            chrome.storage.sync.get(
-                ["timeout", "unit", "historyLimit"],
-                (result) => {
-                    resolve({
-                        timeout: result.timeout || 30,
-                        unit: result.unit || "minutes",
-                        historyLimit:
-                            result.historyLimit !== undefined
-                                ? result.historyLimit
-                                : 100,
-                    });
-                }
-            );
-        });
+        const {
+            timeout = 30,
+            unit = "minutes",
+            historyLimit = 100,
+        } = await chrome.storage.local.get(["timeout", "unit", "historyLimit"]);
+        return { timeout, unit, historyLimit };
     };
 
     /**
      * Retrieves closed tabs history from local storage.
-     * @returns {Promise<ClosedTab[]>}
+     * @returns {Promise<ExpiredTab[]>}
      */
     const getExpiredTabs = async () => {
-        return new Promise((resolve) => {
-            chrome.storage.local.get(["closedTabs"], (result) => {
-                resolve(result.closedTabs || []);
-            });
-        });
+        const { expiredTabs } = await chrome.storage.local.get(["expiredTabs"]);
+        return expiredTabs || [];
     };
 
     /**
@@ -59,9 +47,9 @@
      * @param {Object} tabInfo
      * @returns {Promise<void>}
      */
-    const addClosedTab = async (tabInfo) => {
+    const addExpiredTab = async (tabInfo) => {
         const { historyLimit } = await getSettings();
-        const tabs = await getExpiredTabs();
+        const expiredTabs = await getExpiredTabs();
 
         // Add ID to tabInfo if not present
         if (!tabInfo.id) {
@@ -75,18 +63,14 @@
             }
         }
 
-        tabs.unshift(tabInfo);
+        expiredTabs.unshift(tabInfo);
 
         // Apply limit if not infinite (-1)
-        if (historyLimit !== -1 && tabs.length > historyLimit) {
-            tabs.length = historyLimit;
+        if (historyLimit !== -1 && expiredTabs.length > historyLimit) {
+            expiredTabs.length = historyLimit;
         }
 
-        return new Promise((resolve) => {
-            chrome.storage.local.set({ closedTabs: tabs }, () => {
-                resolve();
-            });
-        });
+        await chrome.storage.local.set({ expiredTabs });
     };
 
     /**
@@ -110,11 +94,8 @@
      */
     const getTabProtection = async (tabId) => {
         const key = getProtectedKey(tabId);
-        return new Promise((resolve) => {
-            chrome.storage.local.get([key], (result) => {
-                resolve(!!result[key]);
-            });
-        });
+        const { [key]: isProtected } = await chrome.storage.local.get([key]);
+        return !!isProtected;
     };
 
     /**
@@ -196,7 +177,7 @@
     async function closeTab(tab) {
         try {
             // Add to history first
-            await addClosedTab({
+            await addExpiredTab({
                 title: tab.title,
                 url: tab.url,
                 closedAt: Date.now(),

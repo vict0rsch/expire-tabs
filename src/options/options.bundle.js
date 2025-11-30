@@ -8,14 +8,11 @@
 
     /**
      * Retrieves closed tabs history from local storage.
-     * @returns {Promise<ClosedTab[]>}
+     * @returns {Promise<ExpiredTab[]>}
      */
     const getExpiredTabs = async () => {
-        return new Promise((resolve) => {
-            chrome.storage.local.get(["closedTabs"], (result) => {
-                resolve(result.closedTabs || []);
-            });
-        });
+        const { expiredTabs } = await chrome.storage.local.get(["expiredTabs"]);
+        return expiredTabs || [];
     };
 
     /**
@@ -24,29 +21,20 @@
      * @returns {Promise<void>}
      */
     const removeExpiredTab = async (tabId) => {
-        const tabs = await getExpiredTabs();
-        const newTabs = tabs.filter((t) => {
+        const expiredTabs = await getExpiredTabs();
+        const newExpiredTabs = expiredTabs.filter((t) => {
             // Ensure strict string comparison just in case
             return String(t.id) !== String(tabId);
         });
-        return new Promise((resolve) => {
-            chrome.storage.local.set({ closedTabs: newTabs }, () => {
-                resolve();
-            });
-        });
+        await chrome.storage.local.set({ expiredTabs: newExpiredTabs });
     };
 
     /**
      * Clears all closed tabs history.
      * @returns {Promise<void>}
      */
-    const clearExpiredTabs = async () => {
-        return new Promise((resolve) => {
-            chrome.storage.local.set({ closedTabs: [] }, () => {
-                resolve();
-            });
-        });
-    };
+    const clearExpiredTabs = async () =>
+        await chrome.storage.local.set({ expiredTabs: [] });
 
     let allTabs = [];
 

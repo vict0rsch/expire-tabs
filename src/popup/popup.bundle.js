@@ -13,7 +13,7 @@
      */
 
     /**
-     * @typedef {Object} ClosedTab
+     * @typedef {Object} ExpiredTab
      * @property {string} id - Unique ID
      * @property {string} title - Tab title
      * @property {string} url - Tab URL
@@ -25,21 +25,12 @@
      * @returns {Promise<Settings>}
      */
     const getSettings = async () => {
-        return new Promise((resolve) => {
-            chrome.storage.sync.get(
-                ["timeout", "unit", "historyLimit"],
-                (result) => {
-                    resolve({
-                        timeout: result.timeout || 30,
-                        unit: result.unit || "minutes",
-                        historyLimit:
-                            result.historyLimit !== undefined
-                                ? result.historyLimit
-                                : 100,
-                    });
-                }
-            );
-        });
+        const {
+            timeout = 30,
+            unit = "minutes",
+            historyLimit = 100,
+        } = await chrome.storage.local.get(["timeout", "unit", "historyLimit"]);
+        return { timeout, unit, historyLimit };
     };
 
     /**
@@ -47,13 +38,8 @@
      * @param {Object} settings
      * @returns {Promise<void>}
      */
-    const saveSettings = async (settings) => {
-        return new Promise((resolve) => {
-            chrome.storage.sync.set(settings, () => {
-                resolve();
-            });
-        });
-    };
+    const saveSettings = async (settings) =>
+        await chrome.storage.local.set(settings);
 
     /**
      * Generates storage key for a tab's activity timestamp.
@@ -76,11 +62,8 @@
      */
     const getTabProtection = async (tabId) => {
         const key = getProtectedKey(tabId);
-        return new Promise((resolve) => {
-            chrome.storage.local.get([key], (result) => {
-                resolve(!!result[key]);
-            });
-        });
+        const { [key]: isProtected } = await chrome.storage.local.get([key]);
+        return !!isProtected;
     };
 
     /**
@@ -93,16 +76,13 @@
         const protectedKey = getProtectedKey(tabId);
         const tabKey = getTabKey(tabId);
 
-        return new Promise((resolve) => {
-            if (isProtected) {
-                chrome.storage.local.set({ [protectedKey]: true }, resolve);
-            } else {
-                // Unprotecting: Remove protection AND reset timestamp
-                chrome.storage.local.remove(protectedKey, () => {
-                    chrome.storage.local.set({ [tabKey]: Date.now() }, resolve);
-                });
-            }
-        });
+        if (isProtected) {
+            await chrome.storage.local.set({ [protectedKey]: true });
+        } else {
+            // Unprotecting: Remove protection AND reset timestamp
+            await chrome.storage.local.remove(protectedKey);
+            await chrome.storage.local.set({ [tabKey]: Date.now() });
+        }
     };
 
     document.addEventListener("DOMContentLoaded", async () => {
