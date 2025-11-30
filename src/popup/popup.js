@@ -34,7 +34,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         await saveSettings({ timeout, unit, historyLimit });
         status.textContent = "Settings saved.";
-        status.style.color = "green";
 
         setTimeout(() => {
             status.textContent = "";

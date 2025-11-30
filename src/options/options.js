@@ -6,79 +6,85 @@ import {
 
 let allTabs = [];
 
+const escapeHtml = (unsafe) => {
+    return (unsafe || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+};
+
 const renderList = (tabsToRender) => {
     const list = document.getElementById("history-list");
-    list.innerHTML = "";
 
     if (tabsToRender.length === 0) {
         list.innerHTML = "<li>No matching closed tabs history.</li>";
         return;
     }
 
-    tabsToRender.forEach((tab) => {
-        const li = document.createElement("li");
+    const html = tabsToRender
+        .map((tab) => {
+            const title = escapeHtml(tab.title || "Unknown Title");
+            const url = escapeHtml(tab.url || "Unknown URL");
+            const time = new Date(tab.closedAt).toLocaleString();
+            const id = escapeHtml(String(tab.id));
 
-        const title = document.createElement("span");
-        title.className = "title";
-        title.textContent = tab.title || "Unknown Title";
-        title.title = tab.title || ""; // Tooltip for full text
+            return `
+            <li data-id="${id}" data-url="${url}">
+                <span class="title" title="${title}">${title}</span>
+                <a class="url" title="${url}" href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>
+                <span class="time">${time}</span>
+                <div class="actions">
+                    <button class="icon-btn copy-btn" title="Copy URL to clipboard">Copy URL</button>
+                    <button class="icon-btn delete-btn" title="Remove from history">×</button>
+                </div>
+            </li>
+        `;
+        })
+        .join("");
 
-        const url = document.createElement("span");
-        url.className = "url";
-        url.textContent = tab.url || "Unknown URL";
-        url.title = tab.url || ""; // Tooltip for full text
+    list.innerHTML = html;
 
-        // Actions Container
-        const actions = document.createElement("div");
-        actions.className = "actions";
-
-        // Copy Button
-        const copyBtn = document.createElement("button");
-        copyBtn.className = "icon-btn copy-btn";
-        copyBtn.textContent = "Copy URL";
-        copyBtn.title = "Copy URL to clipboard";
-        copyBtn.onclick = async () => {
+    // Re-attach event listeners
+    list.querySelectorAll(".copy-btn").forEach((btn) => {
+        btn.addEventListener("click", async (e) => {
+            const li = e.target.closest("li");
+            const url = li.dataset.url;
             try {
-                await navigator.clipboard.writeText(tab.url);
-                const originalText = copyBtn.textContent;
-                copyBtn.textContent = "Copied!";
+                const decodedUrl = new DOMParser().parseFromString(
+                    url,
+                    "text/html"
+                ).documentElement.textContent;
+                await navigator.clipboard.writeText(decodedUrl);
+                const originalText = btn.textContent;
+                btn.textContent = "Copied!";
                 setTimeout(() => {
-                    copyBtn.textContent = originalText;
+                    btn.textContent = originalText;
                 }, 1500);
             } catch (err) {
                 console.error("Failed to copy: ", err);
             }
-        };
-        actions.appendChild(copyBtn);
+        });
+    });
 
-        // Delete Button
-        const deleteBtn = document.createElement("button");
-        deleteBtn.className = "icon-btn delete-btn";
-        deleteBtn.textContent = "×"; // or use an icon
-        deleteBtn.title = "Remove from history";
-        deleteBtn.onclick = async () => {
+    list.querySelectorAll(".delete-btn").forEach((btn) => {
+        btn.addEventListener("click", async (e) => {
             if (confirm("Remove this item?")) {
-                await removeClosedTab(tab.id);
-                // Reload list - simpler than manipulating DOM and array manually for now
-                await loadAndRender();
-                // Re-apply filter if search exists
-                const searchVal = document.getElementById("search").value;
-                if (searchVal) {
-                    filterTabs(searchVal);
+                const li = e.target.closest("li");
+                const id = li.dataset.id;
+                try {
+                    await removeClosedTab(id);
+                    await loadAndRender();
+                    const searchVal = document.getElementById("search").value;
+                    if (searchVal) {
+                        filterTabs(searchVal);
+                    }
+                } catch (err) {
+                    console.error("Error deleting:", err);
                 }
             }
-        };
-        actions.appendChild(deleteBtn);
-
-        const time = document.createElement("span");
-        time.className = "time";
-        time.textContent = new Date(tab.closedAt).toLocaleString();
-
-        li.appendChild(title);
-        li.appendChild(url);
-        li.appendChild(actions);
-        li.appendChild(time);
-        list.appendChild(li);
+        });
     });
 };
 
@@ -102,9 +108,7 @@ const filterTabs = (query) => {
         const title = (tab.title || "").toLowerCase();
         const url = (tab.url || "").toLowerCase();
 
-        // Check if title contains all terms
         const titleMatch = terms.every((term) => title.includes(term));
-        // Check if url contains all terms
         const urlMatch = terms.every((term) => url.includes(term));
 
         return titleMatch || urlMatch;
@@ -120,7 +124,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (confirm("Are you sure you want to clear history?")) {
             await clearClosedTabs();
             await loadAndRender();
-            // Clear search box as well
             document.getElementById("search").value = "";
         }
     });

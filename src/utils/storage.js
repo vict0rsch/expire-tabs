@@ -56,8 +56,10 @@ export const addClosedTab = async (tabInfo) => {
 
 export const removeClosedTab = async (tabId) => {
     const tabs = await getClosedTabs();
-    const newTabs = tabs.filter((t) => t.id !== tabId);
-
+    const newTabs = tabs.filter((t) => {
+        // Ensure strict string comparison just in case
+        return String(t.id) !== String(tabId);
+    });
     return new Promise((resolve) => {
         chrome.storage.local.set({ closedTabs: newTabs }, () => {
             resolve();

@@ -11,7 +11,7 @@
         "scripts": ["background/bundle.js"]
     },
     "action": {
-        "default_popup": "popup/index.html",
+        "default_popup": "popup/popup.html",
         "default_icon": {
             "16": "icons/icon16.png",
             "48": "icons/icon48.png",
@@ -19,7 +19,7 @@
         }
     },
     "options_ui": {
-        "page": "options/index.html",
+        "page": "options/options.html",
         "open_in_tab": true
     },
     "icons": {

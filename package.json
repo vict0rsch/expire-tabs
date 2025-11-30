@@ -7,7 +7,6 @@
         "build:popup": "rollup -c rollup.config.mjs",
         "watch:popup": "rollup -c rollup.config.mjs -w",
         "dev": "concurrently \"npm run watch:popup\" \"extension dev src --browser=chrome\"",
-        "watch": "npm run dev",
         "build": "npm run build:popup && extension build src --browser=chrome && extension build src --browser=firefox",
         "start": "npm run build:popup && extension start src",
         "pretest": "npm run build:popup",
