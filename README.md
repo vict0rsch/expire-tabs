@@ -37,18 +37,16 @@ This project supports both Chrome and Firefox. It is mainly vibe-coded because I
 
 ### Development (Watch Mode)
 
-To start the development server (defaults to Chrome) and watch for changes:
+To start the development server and watch for changes (including HTML/CSS):
 
 ```bash
 npm run watch
-# OR
-npm run dev
 ```
 
-This runs:
+This runs Rollup in watch mode, which:
 
-1. Rollup in watch mode for bundling scripts.
-2. Extension.js dev server for loading the extension in Chrome.
+1. Recompiles the JS bundles.
+2. Rebuilds the full extension (`dist/chrome` and `dist/firefox`) whenever JS, HTML, CSS, or Manifest files change.
 
 ### Build
 
