@@ -1,15 +1,17 @@
 import { getTabKey, getProtectedKey } from "../utils/storage.js";
-import { checkTabs, updateBadge } from "./logic.js";
+import { checkTabs, updateBadge, cleanUpStorage } from "./logic.js";
 
 const ALARM_NAME = "check_tabs";
 
 // Setup alarm on install/startup
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener(async () => {
     chrome.alarms.create(ALARM_NAME, { periodInMinutes: 1 });
+    await cleanUpStorage();
 });
 
-chrome.runtime.onStartup.addListener(() => {
+chrome.runtime.onStartup.addListener(async () => {
     chrome.alarms.create(ALARM_NAME, { periodInMinutes: 1 });
+    await cleanUpStorage();
 });
 
 // When a tab is activated, update its last active time

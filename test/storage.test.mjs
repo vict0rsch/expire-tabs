@@ -11,6 +11,7 @@ const chromeMock = {
         local: {
             get: sinon.stub(),
             set: sinon.stub(),
+            remove: sinon.stub(),
         },
     },
 };
@@ -39,7 +40,7 @@ describe("Storage Utils", () => {
 
     describe("getSettings", () => {
         it("should return default settings if not set", async () => {
-            chromeMock.storage.sync.get.yields({});
+            chromeMock.storage.local.get.resolves({});
             const settings = await getSettings();
             expect(settings.timeout).to.equal(30);
             expect(settings.unit).to.equal("minutes");
@@ -47,7 +48,7 @@ describe("Storage Utils", () => {
         });
 
         it("should return saved settings", async () => {
-            chromeMock.storage.sync.get.yields({
+            chromeMock.storage.local.get.resolves({
                 timeout: 60,
                 unit: "hours",
                 historyLimit: 200,
@@ -61,10 +62,10 @@ describe("Storage Utils", () => {
 
     describe("saveSettings", () => {
         it("should save settings object", async () => {
-            chromeMock.storage.sync.set.yields();
+            chromeMock.storage.local.set.resolves();
             await saveSettings({ timeout: 45, unit: "days", historyLimit: 50 });
             expect(
-                chromeMock.storage.sync.set.calledWith({
+                chromeMock.storage.local.set.calledWith({
                     timeout: 45,
                     unit: "days",
                     historyLimit: 50,
@@ -76,9 +77,13 @@ describe("Storage Utils", () => {
     describe("addExpiredTab", () => {
         it("should add a tab to history and generate ID", async () => {
             // getSettings returns default historyLimit=100
-            chromeMock.storage.sync.get.yields({});
-            chromeMock.storage.local.get.yields({ expiredTabs: [] });
-            chromeMock.storage.local.set.yields();
+            chromeMock.storage.local.get
+                .withArgs(["timeout", "unit", "historyLimit"])
+                .resolves({});
+            chromeMock.storage.local.get
+                .withArgs(["expiredTabs"])
+                .resolves({ expiredTabs: [] });
+            chromeMock.storage.local.set.resolves();
 
             const tab = {
                 title: "Test",
@@ -88,7 +93,7 @@ describe("Storage Utils", () => {
             await addExpiredTab(tab);
 
             const savedTab =
-                chromeMock.storage.local.set.firstCall.args[0].expiredTabs[0];
+                chromeMock.storage.local.set.lastCall.args[0].expiredTabs[0];
             expect(savedTab.title).to.equal(tab.title);
             expect(savedTab.url).to.equal(tab.url);
             expect(savedTab.id).to.exist; // Check if ID was generated
@@ -96,33 +101,41 @@ describe("Storage Utils", () => {
 
         it("should limit history to configured limit", async () => {
             // Mock configured limit of 10
-            chromeMock.storage.sync.get.yields({ historyLimit: 10 });
+            chromeMock.storage.local.get
+                .withArgs(["timeout", "unit", "historyLimit"])
+                .resolves({ historyLimit: 10 });
 
             const existing = Array(10).fill({ title: "Old", url: "old.com" });
-            chromeMock.storage.local.get.yields({ expiredTabs: existing });
-            chromeMock.storage.local.set.yields();
+            chromeMock.storage.local.get
+                .withArgs(["expiredTabs"])
+                .resolves({ expiredTabs: existing });
+            chromeMock.storage.local.set.resolves();
 
             const tab = { title: "New", url: "new.com" };
             await addExpiredTab(tab);
 
-            const args = chromeMock.storage.local.set.firstCall.args[0];
+            const args = chromeMock.storage.local.set.lastCall.args[0];
             expect(args.expiredTabs.length).to.equal(10);
             expect(args.expiredTabs[0].title).to.equal(tab.title);
         });
 
         it("should allow infinite history if limit is -1", async () => {
             // Mock infinite limit
-            chromeMock.storage.sync.get.yields({ historyLimit: -1 });
+            chromeMock.storage.local.get
+                .withArgs(["timeout", "unit", "historyLimit"])
+                .resolves({ historyLimit: -1 });
 
             // Existing 150 items (more than default 100)
             const existing = Array(150).fill({ title: "Old", url: "old.com" });
-            chromeMock.storage.local.get.yields({ expiredTabs: existing });
-            chromeMock.storage.local.set.yields();
+            chromeMock.storage.local.get
+                .withArgs(["expiredTabs"])
+                .resolves({ expiredTabs: existing });
+            chromeMock.storage.local.set.resolves();
 
             const tab = { title: "New", url: "new.com" };
             await addExpiredTab(tab);
 
-            const args = chromeMock.storage.local.set.firstCall.args[0];
+            const args = chromeMock.storage.local.set.lastCall.args[0];
             expect(args.expiredTabs.length).to.equal(151);
         });
     });
@@ -134,8 +147,8 @@ describe("Storage Utils", () => {
                 { id: "2", title: "Tab 2" },
                 { id: "3", title: "Tab 3" },
             ];
-            chromeMock.storage.local.get.yields({ expiredTabs: tabs });
-            chromeMock.storage.local.set.yields();
+            chromeMock.storage.local.get.resolves({ expiredTabs: tabs });
+            chromeMock.storage.local.set.resolves();
 
             await removeExpiredTab("2");
 
@@ -148,7 +161,7 @@ describe("Storage Utils", () => {
 
     describe("clearExpiredTabs", () => {
         it("should clear history", async () => {
-            chromeMock.storage.local.set.yields();
+            chromeMock.storage.local.set.resolves();
             await clearExpiredTabs();
             expect(chromeMock.storage.local.set.calledWith({ expiredTabs: [] }))
                 .to.be.true;

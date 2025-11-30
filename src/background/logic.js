@@ -117,3 +117,33 @@ export async function updateBadge(tabId) {
         // Tab might be closed
     }
 }
+
+/**
+ * Cleans up storage by removing data for tabs that no longer exist.
+ * @returns {Promise<void>}
+ */
+export async function cleanUpStorage() {
+    const allData = await chrome.storage.local.get(null);
+    const allKeys = Object.keys(allData);
+    const tabs = await chrome.tabs.query({});
+    const openTabIds = new Set(tabs.map((t) => t.id));
+
+    const keysToRemove = [];
+
+    for (const key of allKeys) {
+        let tabId;
+        if (key.startsWith("tab_")) {
+            tabId = parseInt(key.replace("tab_", ""), 10);
+        } else if (key.startsWith("protected_")) {
+            tabId = parseInt(key.replace("protected_", ""), 10);
+        }
+
+        if (tabId && !openTabIds.has(tabId)) {
+            keysToRemove.push(key);
+        }
+    }
+
+    if (keysToRemove.length > 0) {
+        await chrome.storage.local.remove(keysToRemove);
+    }
+}
