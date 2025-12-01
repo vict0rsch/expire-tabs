@@ -29,7 +29,11 @@
             timeout = 30,
             unit = "minutes",
             historyLimit = 100,
-        } = await chrome.storage.local.get(["timeout", "unit", "historyLimit"]);
+        } = await chrome.storage.local.get([
+            "timeoutInput",
+            "unit",
+            "historyLimit",
+        ]);
         return { timeout, unit, historyLimit };
     };
 
@@ -96,6 +100,25 @@
         const key = getProtectedKey(tabId);
         const { [key]: isProtected } = await chrome.storage.local.get([key]);
         return !!isProtected;
+    };
+
+    /**
+     * Sets protection status for a tab.
+     * @param {number} tabId
+     * @param {boolean} isProtected
+     * @returns {Promise<void>}
+     */
+    const setTabProtection = async (tabId, isProtected) => {
+        const protectedKey = getProtectedKey(tabId);
+        const tabKey = getTabKey(tabId);
+
+        if (isProtected) {
+            await chrome.storage.local.set({ [protectedKey]: true });
+        } else {
+            // Unprotecting: Remove protection AND reset timestamp
+            await chrome.storage.local.remove(protectedKey);
+            await chrome.storage.local.set({ [tabKey]: Date.now() });
+        }
     };
 
     /**
@@ -240,6 +263,27 @@
         }
     }
 
+    /**
+     * Handles keyboard commands.
+     * @param {string} command
+     * @returns {Promise<void>}
+     */
+    async function handleCommand(command) {
+        if (command === "toggle-protection") {
+            const [tab] = await chrome.tabs.query({
+                active: true,
+                currentWindow: true,
+            });
+            if (tab) {
+                const isProtected = await getTabProtection(tab.id);
+                await setTabProtection(tab.id, !isProtected);
+                // Badge update is handled by storage listener in main.js or we can call it here explicitly
+                // Ideally, main.js listener handles it, but calling it here gives immediate feedback if listener is slow/detached
+                // For now, reliance on storage listener is fine as it preserves architecture
+            }
+        }
+    }
+
     const ALARM_NAME = "check_tabs";
 
     // Setup alarm on install/startup
@@ -275,6 +319,9 @@
         const protectedKey = getProtectedKey(tabId);
         await chrome.storage.local.remove([key, protectedKey]);
     });
+
+    // Listen for commands (keyboard shortcuts)
+    chrome.commands.onCommand.addListener(handleCommand);
 
     // Listen for storage changes to update badge
     chrome.storage.onChanged.addListener((changes, area) => {
