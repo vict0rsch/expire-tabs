@@ -1,6 +1,6 @@
 :root {
     --background-color: #2e315c;
-    --background-color-light: #9196e6;
+    --background-color-light: rgb(145, 150, 230);
     --primary-color: #5dc162;
     --primary-color-hover: #69c66e;
     --secondary-color: #d58438;
@@ -67,7 +67,7 @@ select {
 .input-group select {
     padding: 8px;
     border: 1px solid #ccc;
-    border-radius: 8px;
+    border-radius: 8px !important;
 }
 
 label {
@@ -77,7 +77,7 @@ label {
 input {
     padding: 8px;
     border: 1px solid #ccc;
-    border-radius: 8px;
+    border-radius: 8px !important;
 }
 
 button {
@@ -85,7 +85,7 @@ button {
     color: white;
     border: none;
     padding: 8px;
-    border-radius: 8px;
+    border-radius: 8px !important;
     cursor: pointer;
     font-weight: bold;
 }
@@ -112,12 +112,22 @@ button.secondary:hover {
 }
 
 button:disabled {
-    background-color: #6c757d;
+    background-color: #b8b8b8;
     cursor: not-allowed;
+    color: #6c757d;
+    border-color: #b8b8b8;
 }
 
 button:disabled:hover {
-    background-color: #6c757d;
+    background-color: #b8b8b8;
     cursor: not-allowed;
-    color: var(--secondary-color);
+    color: #6c757d;
+    border-color: #b8b8b8;
+}
+
+.form-container {
+    border-radius: 8px;
+    padding: 24px 32px;
+    background: #5259b7;
+    box-shadow: 5px 6px 0px 0px var(--secondary-color);
 }
