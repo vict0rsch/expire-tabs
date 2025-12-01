@@ -13,6 +13,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     const historyButton = document.getElementById("history");
     const status = document.getElementById("status");
     const protectBtn = document.getElementById("protect-toggle");
+    const helpIcon = document.getElementById("help-icon");
+    const helpModal = document.getElementById("help-modal");
+
+    helpIcon.addEventListener("click", () => {
+        helpModal.classList.remove("hidden");
+    });
+
+    window.addEventListener("click", (event) => {
+        if (event.target === helpModal) {
+            helpModal.classList.add("hidden");
+        }
+    });
 
     // Load current settings
     const settings = await getSettings();
@@ -47,24 +59,25 @@ document.addEventListener("DOMContentLoaded", async () => {
             await updateButton();
         });
     } else {
-        protectBtn.style.display = "none";
+        protectBtn.classList.add("hidden");
     }
 
     // Save setting
     saveButton.addEventListener("click", async () => {
+        status.classList.remove("error");
         const timeout = parseInt(timeoutInput.value, 10);
         const unit = unitInput.value;
         const historyLimit = parseInt(historyLimitInput.value, 10);
 
         if (isNaN(timeout) || timeout < 1) {
             status.textContent = "Invalid time.";
-            status.style.color = "red";
+            status.classList.add("error");
             return;
         }
 
         if (isNaN(historyLimit) || historyLimit < -1 || historyLimit === 0) {
             status.textContent = "Invalid limit.";
-            status.style.color = "red";
+            status.classList.add("error");
             return;
         }
 

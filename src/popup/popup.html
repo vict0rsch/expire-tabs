@@ -14,58 +14,85 @@
         <link rel="stylesheet" href="popup.css" />
     </head>
     <body>
+        <div id="help-icon">
+            <span id="help-icon-text">?</span>
+        </div>
         <div class="container">
             <h1>Expire Tabs ⏳</h1>
 
-            <div style="margin-bottom: 10px; text-align: center">
-                <button id="protect-toggle" style="width: 100%">
-                    Loading...
-                </button>
+            <div class="protect-section">
+                <button id="protect-toggle">Loading...</button>
             </div>
-
-            <div class="form-group">
-                <label for="timeout">Close tabs after:</label>
-                <div class="input-group">
-                    <input
-                        type="number"
-                        id="timeout"
-                        min="1"
-                        placeholder="e.g. 30"
-                    />
-                    <select id="unit">
-                        <option value="minutes">Minutes</option>
-                        <option value="hours">Hours</option>
-                        <option value="days">Days</option>
-                    </select>
+            <div class="form-container">
+                <div class="form-group">
+                    <label for="timeout">Close tabs after:</label>
+                    <div class="input-group timeout-group">
+                        <input
+                            type="number"
+                            id="timeout"
+                            min="1"
+                            placeholder="e.g. 30"
+                        />
+                        <select id="unit">
+                            <option value="minutes">Minutes</option>
+                            <option value="hours">Hours</option>
+                            <option value="days">Days</option>
+                        </select>
+                    </div>
                 </div>
-            </div>
-            <div
-                style="
-                    display: flex;
-                    gap: 10px;
-                    align-items: end;
-                    justify-content: space-between;
-                    position: relative;
-                "
-            >
-                <div
-                    class="form-group"
-                    style="display: flex; gap: 10px; max-width: 150px"
-                >
-                    <label for="historyLimit">History Limit (-1 for ∞):</label>
-                    <input
-                        type="number"
-                        id="historyLimit"
-                        min="-1"
-                        placeholder="e.g. 100"
-                    />
+                <div class="bottom-controls">
+                    <div class="form-group history-limit-group">
+                        <label for="historyLimit">
+                            <abbr title="Set to -1 for infinite history">
+                                History Limit
+                            </abbr>
+                            :
+                        </label>
+                        <input
+                            type="number"
+                            id="historyLimit"
+                            min="-1"
+                            placeholder="e.g. 100"
+                        />
+                    </div>
+                    <button id="save">Save Settings&nbsp;&nbsp;💾</button>
+                    <div id="status" aria-live="polite"></div>
                 </div>
-                <button id="save">Save Settings&nbsp;&nbsp;💾</button>
-                <div id="status" aria-live="polite"></div>
             </div>
             <button id="history" class="secondary-outline">
                 Expired Tabs History&nbsp;&nbsp;🗃️
             </button>
+        </div>
+        <div id="help-modal" class="hidden">
+            <div id="help-modal-content">
+                <h2>Help</h2>
+                <p>
+                    This extension closes tabs after they have been inactive for
+                    a specified amount of time.
+                </p>
+                <p>
+                    The timer resets whenever you use/focus a tab or when the
+                    tab is pinned.
+                </p>
+                <p>
+                    You can protect a tab from being closed by clicking the
+                    "Protect Tab" button.
+                </p>
+                <p>
+                    You can view the history of closed tabs by clicking the
+                    "Expired Tabs History" button.
+                </p>
+                <p>
+                    Find me on Github: share some love with a star ⭐, report
+                    issues 💔 or request features 💡
+                    <a
+                        class="github-link"
+                        href="https://github.com/vict0rsch/expire-tabs"
+                        target="_blank"
+                        >vict0rsch/expire-tabs</a
+                    >
+                </p>
+            </div>
         </div>
         <script src="popup.bundle.js"></script>
     </body>

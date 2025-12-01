@@ -8,22 +8,135 @@ body {
     margin: 0;
 }
 
+/* Layout Components */
+.protect-section {
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.protect-section button {
+    width: 100%;
+}
+
+.timeout-group {
+    gap: 10px;
+}
+
+.bottom-controls {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    justify-content: space-between;
+    position: relative;
+}
+
+.history-limit-group {
+    /* Inherits display: flex; flex-direction: column; gap: 5px from .form-group */
+    gap: 10px;
+    max-width: 150px;
+    margin-top: 10px;
+}
+
+/* Component Styles */
 #status {
     color: var(--primary-color);
     font-weight: bold;
     height: 20px;
     position: absolute;
-    bottom: -32px;
+    bottom: -58px;
     left: 50%;
     transform: translateX(-50%);
 }
 
+#status.error {
+    color: #e53935;
+}
+
 #save {
     height: 35px;
+    flex: 1;
 }
 
 #history {
     height: 35px;
     margin: 32px auto 16px auto;
     width: 75%;
+}
+
+#timeout {
+    flex: 0 0 auto; /* Prevents growing in flex container */
+    width: 65px;
+}
+
+#historyLimit {
+    width: 65px;
+}
+
+#unit {
+    flex: 1;
+}
+
+.github-link {
+    color: var(--secondary-color);
+}
+
+/* Utility Classes */
+.hidden {
+    display: none !important;
+}
+
+/* Help Icon */
+#help-icon {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid var(--secondary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    color: var(--secondary-color);
+}
+
+#help-icon:hover {
+    background-color: var(--secondary-color);
+    color: white !important;
+    transform: scale(1.1);
+}
+
+#help-icon-text {
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+/* Help Modal */
+#help-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(145, 150, 230, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease-in-out;
+    z-index: 1000;
+}
+
+#help-modal-content {
+    background-color: var(--background-color);
+    padding: 16px;
+    border-radius: 8px;
+    width: 75%;
+    max-width: 280px;
+}
+
+#help-modal-content p {
+    margin-bottom: 10px;
+    font-size: 0.9rem;
 }
