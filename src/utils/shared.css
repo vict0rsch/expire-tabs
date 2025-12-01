@@ -1,0 +1,133 @@
+:root {
+    --background-color: #2e315c;
+    --background-color-light: rgb(145, 150, 230);
+    --primary-color: #5dc162;
+    --primary-color-hover: #69c66e;
+    --secondary-color: #d58438;
+    --secondary-color-hover: rgb(194, 144, 36);
+}
+
+body {
+    font-family: "Quicksand", -apple-system, BlinkMacSystemFont, "Segoe UI",
+        Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue",
+        sans-serif;
+    font-size: 100% !important;
+    padding: 16px;
+    margin: 0;
+    background-color: var(--background-color);
+    color: white;
+    box-sizing: border-box;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: "Baloo Chettan 2", -apple-system, BlinkMacSystemFont,
+        "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans",
+        "Helvetica Neue", sans-serif;
+}
+
+input,
+select {
+    font-family: "Quicksand", -apple-system, BlinkMacSystemFont, "Segoe UI",
+        Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue",
+        sans-serif !important;
+    background-color: var(--background-color-light);
+    border: none;
+    border-radius: 8px;
+    padding: 8px;
+    color: #333;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.input-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.input-group input {
+    flex: 1;
+}
+
+.input-group select {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 8px !important;
+}
+
+label {
+    font-size: 1rem;
+}
+
+input {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 8px !important;
+}
+
+button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 8px;
+    border-radius: 8px !important;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+button:hover {
+    background-color: var(--primary-color-hover);
+}
+
+button.secondary {
+    background-color: var(--secondary-color);
+}
+button.secondary-outline {
+    background-color: transparent;
+    border: 2px solid var(--secondary-color);
+    color: var(--secondary-color);
+}
+
+button.secondary-outline:hover {
+    background-color: var(--secondary-color);
+    color: white;
+}
+button.secondary:hover {
+    background-color: var(--secondary-color-hover);
+}
+
+button:disabled {
+    background-color: #b8b8b8;
+    cursor: not-allowed;
+    color: #6c757d;
+    border-color: #b8b8b8;
+}
+
+button:disabled:hover {
+    background-color: #b8b8b8;
+    cursor: not-allowed;
+    color: #6c757d;
+    border-color: #b8b8b8;
+}
+
+.form-container {
+    border-radius: 8px;
+    padding: 24px 32px;
+    background: #5259b7;
+    box-shadow: 5px 6px 0px 0px var(--secondary-color);
+}
