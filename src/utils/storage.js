@@ -26,11 +26,7 @@ export const getSettings = async () => {
         timeout = 30,
         unit = "minutes",
         historyLimit = 100,
-    } = await chrome.storage.local.get([
-        "timeoutInput",
-        "unit",
-        "historyLimit",
-    ]);
+    } = await chrome.storage.local.get(["timeout", "unit", "historyLimit"]);
     return { timeout, unit, historyLimit };
 };
 

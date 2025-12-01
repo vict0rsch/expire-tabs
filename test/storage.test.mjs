@@ -78,7 +78,7 @@ describe("Storage Utils", () => {
         it("should add a tab to history and generate ID", async () => {
             // getSettings returns default historyLimit=100
             chromeMock.storage.local.get
-                .withArgs(["timeoutInput", "unit", "historyLimit"])
+                .withArgs(["timeout", "unit", "historyLimit"])
                 .resolves({});
             chromeMock.storage.local.get
                 .withArgs(["expiredTabs"])
@@ -102,7 +102,7 @@ describe("Storage Utils", () => {
         it("should limit history to configured limit", async () => {
             // Mock configured limit of 10
             chromeMock.storage.local.get
-                .withArgs(["timeoutInput", "unit", "historyLimit"])
+                .withArgs(["timeout", "unit", "historyLimit"])
                 .resolves({ historyLimit: 10 });
 
             const existing = Array(10).fill({ title: "Old", url: "old.com" });
@@ -122,7 +122,7 @@ describe("Storage Utils", () => {
         it("should allow infinite history if limit is -1", async () => {
             // Mock infinite limit
             chromeMock.storage.local.get
-                .withArgs(["timeoutInput", "unit", "historyLimit"])
+                .withArgs(["timeout", "unit", "historyLimit"])
                 .resolves({ historyLimit: -1 });
 
             // Existing 150 items (more than default 100)
