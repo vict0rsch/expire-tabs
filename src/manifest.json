@@ -28,6 +28,22 @@
         "96": "icons/icon96.png",
         "128": "icons/icon128.png"
     },
+    "commands": {
+        "_execute_action": {
+            "suggested_key": {
+                "default": "Alt+Shift+A",
+                "mac": "Alt+Shift+A"
+            },
+            "description": "Open the extension popup"
+        },
+        "toggle-protection": {
+            "suggested_key": {
+                "default": "Alt+Shift+P",
+                "mac": "Alt+Shift+P"
+            },
+            "description": "Toggle protection for the current tab"
+        }
+    },
     "firefox:browser_specific_settings": {
         "gecko": {
             "id": "expire-tabs@vict0rsch"
