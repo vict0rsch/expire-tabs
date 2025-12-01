@@ -27,7 +27,7 @@ const createTabHtml = (tab) => {
     const id = escapeHtml(String(tab.id));
 
     return `
-            <li data-id="${id}" data-url="${url}">
+            <li data-id="${id}" data-url="${url}" class="my-4">
                 <span class="title" title="${title}">${title}</span>
                 <a class="url" title="${url}" href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>
                 <span class="time">${time}</span>
@@ -207,6 +207,14 @@ const filterTabs = (query) => {
 };
 
 const getOldEntries = async ({ value, unit }) => {
+    if (
+        !value ||
+        !["minutes", "hours", "days"].includes(unit) ||
+        isNaN(value) ||
+        value <= 0
+    ) {
+        return [];
+    }
     const expiredTabs = await getExpiredTabs();
     return expiredTabs.filter((entry) => {
         let delta = value;

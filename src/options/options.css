@@ -20,7 +20,11 @@ h1 {
 .search-container {
     margin-top: 20px;
     margin-bottom: 10px;
-    gap: 10px;
+}
+
+.input-group.row {
+    gap: 16px;
+    height: 40px;
 }
 
 #search {
@@ -35,14 +39,13 @@ h1 {
 ul {
     list-style-type: none;
     padding: 0;
-    margin-top: 20px;
+    margin-top: 8px;
 }
 
 li {
     background: #f9f9f9;
     border: 1px solid #eee;
     padding: 12px 15px;
-    margin-bottom: 10px;
     border-radius: 6px;
 
     /* Grid Layout for structured content */
@@ -53,7 +56,6 @@ li {
     row-gap: 4px;
     align-items: center;
     box-shadow: 5px 6px 0px 0px var(--secondary-color);
-    margin-bottom: 16px;
 }
 
 li .title {
@@ -95,7 +97,7 @@ li .actions {
 #form-container input,
 #form-container select,
 #form-container button {
-    height: 37px;
+    height: inherit;
     padding: 0 10px;
 }
 #form-container input,
@@ -164,4 +166,10 @@ li .time {
 ::placeholder {
     color: #dfdaf9;
     opacity: 1; /* Firefox */
+}
+
+#downloadHistory {
+    padding: 12px 16px;
+    font-size: 1rem;
+    font-weight: 400;
 }
