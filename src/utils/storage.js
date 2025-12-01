@@ -1,3 +1,5 @@
+import { getDefaults } from "./config.js";
+
 /**
  * Storage utility functions for Expire Tabs extension.
  */
@@ -22,11 +24,15 @@
  * @returns {Promise<Settings>}
  */
 export const getSettings = async () => {
-    const {
-        timeout = 30,
-        unit = "minutes",
-        historyLimit = 100,
-    } = await chrome.storage.local.get(["timeout", "unit", "historyLimit"]);
+    const defaults = getDefaults();
+    let { timeout, unit, historyLimit } = await chrome.storage.local.get([
+        "timeout",
+        "unit",
+        "historyLimit",
+    ]);
+    timeout = timeout || defaults.timeout;
+    unit = unit || defaults.unit;
+    historyLimit = historyLimit || defaults.historyLimit;
     return { timeout, unit, historyLimit };
 };
 

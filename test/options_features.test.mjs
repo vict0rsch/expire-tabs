@@ -9,6 +9,15 @@ import {
     clearStorage,
     loadTestData,
 } from "./testUtils.mjs";
+import { getDefaults } from "../src/utils/config.js";
+
+const defaults = getDefaults();
+const defaultUnitMultiplier =
+    defaults.unit === "minutes"
+        ? 60 * 1000
+        : defaults.unit === "hours"
+        ? 60 * 60 * 1000
+        : 24 * 60 * 60 * 1000;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -46,7 +55,7 @@ describe("Options Page New Features", function () {
         await page.goto(optionsUrl);
 
         const now = Date.now();
-        const minute = 60 * 1000;
+        const timeoutMs = (defaults.timeout + 1) * defaultUnitMultiplier;
 
         // Use data from JSON but override closedAt relative to now
         // Assuming testData has at least 2 items
@@ -55,13 +64,13 @@ describe("Options Page New Features", function () {
                 ...testData.expiredTabs[0],
                 id: "old-tab",
                 title: "Old Tab",
-                closedAt: now - 35 * minute,
+                closedAt: now - timeoutMs,
             },
             {
                 ...testData.expiredTabs[1],
                 id: "new-tab",
                 title: "New Tab",
-                closedAt: now - 10 * minute,
+                closedAt: now - timeoutMs / 2,
             },
         ];
 
@@ -75,8 +84,8 @@ describe("Options Page New Features", function () {
         assert.strictEqual(items.length, 2, "Should have 2 items initially");
 
         // Interact with "Delete older than" inputs
-        await page.type("#deleteOlderThan", "30");
-        await page.select("#unit", "minutes");
+        await page.type("#deleteOlderThan", defaults.timeout.toString());
+        await page.select("#unit", defaults.unit);
 
         // Trigger change event to update button state
         await page.evaluate(() => {

@@ -1,6 +1,8 @@
 import { expect } from "chai";
 import sinon from "sinon";
 
+import { getDefaults } from "../src/utils/config.js";
+
 // Mock browser API
 const chromeMock = {
     storage: {
@@ -15,6 +17,8 @@ const chromeMock = {
         },
     },
 };
+
+const defaults = getDefaults();
 
 global.chrome = chromeMock;
 
@@ -42,9 +46,9 @@ describe("Storage Utils", () => {
         it("should return default settings if not set", async () => {
             chromeMock.storage.local.get.resolves({});
             const settings = await getSettings();
-            expect(settings.timeout).to.equal(30);
-            expect(settings.unit).to.equal("minutes");
-            expect(settings.historyLimit).to.equal(100);
+            expect(settings.timeout).to.equal(defaults.timeout);
+            expect(settings.unit).to.equal(defaults.unit);
+            expect(settings.historyLimit).to.equal(defaults.historyLimit);
         });
 
         it("should return saved settings", async () => {

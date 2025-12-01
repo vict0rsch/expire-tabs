@@ -2,11 +2,6 @@
     'use strict';
 
     /**
-     * Storage utility functions for Expire Tabs extension.
-     */
-
-
-    /**
      * Retrieves closed tabs history from local storage.
      * @returns {Promise<ExpiredTab[]>}
      */
