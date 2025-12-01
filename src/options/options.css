@@ -22,17 +22,10 @@ h1 {
     margin-bottom: 10px;
 }
 
-.input-group.row {
-    gap: 16px;
-    height: 40px;
-}
-
 #search {
-    width: 100%;
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 8px;
-    box-sizing: border-box; /* Ensure padding doesn't affect width */
     background-color: var(--background-color-light);
 }
 
@@ -94,15 +87,18 @@ li .actions {
     align-items: center;
 }
 
-#form-container input,
-#form-container select,
-#form-container button {
-    height: inherit;
+.form-container input,
+.form-container select,
+.form-container button {
+    height: 40px;
     padding: 0 10px;
 }
-#form-container input,
-#form-container select {
+.form-container input,
+.form-container select,
+.form-container input:focus,
+.form-container select:focus {
     color: white;
+    background-color: var(--background-color-light);
 }
 
 .icon-btn {
@@ -163,7 +159,7 @@ li .time {
     align-items: center;
 }
 
-::placeholder {
+input::placeholder {
     color: #dfdaf9;
     opacity: 1; /* Firefox */
 }

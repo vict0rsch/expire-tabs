@@ -103,11 +103,13 @@ button.secondary-outline {
     color: var(--secondary-color);
 }
 
-button.secondary-outline:hover {
+button.secondary-outline:hover,
+button.secondary-outline:focus {
     background-color: var(--secondary-color);
     color: white;
 }
-button.secondary:hover {
+button.secondary:hover,
+button.secondary:focus {
     background-color: var(--secondary-color-hover);
 }
 
