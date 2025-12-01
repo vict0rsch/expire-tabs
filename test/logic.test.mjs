@@ -32,6 +32,7 @@ import {
     checkTabs,
     updateBadge,
     cleanUpStorage,
+    handleCommand,
 } from "../src/background/logic.js";
 
 describe("Background Logic", () => {
@@ -49,7 +50,7 @@ describe("Background Logic", () => {
         it("should close expired tabs", async () => {
             // Settings: 30 minutes
             chromeMock.storage.local.get
-                .withArgs(["timeout", "unit", "historyLimit"])
+                .withArgs(["timeoutInput", "unit", "historyLimit"])
                 .resolves({ timeout: 30, unit: "minutes" });
             chromeMock.storage.local.get
                 .withArgs(["expiredTabs"])
@@ -94,7 +95,7 @@ describe("Background Logic", () => {
                 if (Array.isArray(keys) && keys.includes("tab_1")) {
                     return Promise.resolve(storageData);
                 }
-                if (Array.isArray(keys) && keys.includes("timeout")) {
+                if (Array.isArray(keys) && keys.includes("timeoutInput")) {
                     return Promise.resolve({ timeout: 30, unit: "minutes" });
                 }
                 if (Array.isArray(keys) && keys.includes("expiredTabs")) {
@@ -133,7 +134,7 @@ describe("Background Logic", () => {
                 if (Array.isArray(keys) && keys.includes("tab_1")) {
                     return Promise.resolve(storageData);
                 }
-                if (Array.isArray(keys) && keys.includes("timeout")) {
+                if (Array.isArray(keys) && keys.includes("timeoutInput")) {
                     return Promise.resolve({ timeout: 30, unit: "minutes" });
                 }
                 return Promise.resolve({});
@@ -146,7 +147,7 @@ describe("Background Logic", () => {
 
         it("should not close audible or pinned tabs", async () => {
             chromeMock.storage.local.get.callsFake((keys) => {
-                if (Array.isArray(keys) && keys.includes("timeout")) {
+                if (Array.isArray(keys) && keys.includes("timeoutInput")) {
                     return Promise.resolve({ timeout: 30, unit: "minutes" });
                 }
                 return Promise.resolve({});
