@@ -167,5 +167,7 @@ export async function handleCommand(command) {
             // Ideally, main.js listener handles it, but calling it here gives immediate feedback if listener is slow/detached
             // For now, reliance on storage listener is fine as it preserves architecture
         }
+    } else if (command === "open-history") {
+        chrome.runtime.openOptionsPage();
     }
 }

@@ -42,6 +42,13 @@
                 "mac": "Alt+Shift+P"
             },
             "description": "Toggle protection for the current tab"
+        },
+        "open-history": {
+            "suggested_key": {
+                "default": "Alt+Shift+H",
+                "mac": "Alt+Shift+H"
+            },
+            "description": "Open the history (options) page"
         }
     },
     "firefox:browser_specific_settings": {

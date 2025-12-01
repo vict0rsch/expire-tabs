@@ -25,6 +25,9 @@ const chromeMock = {
         setBadgeText: sinon.stub(),
         setBadgeBackgroundColor: sinon.stub(),
     },
+    runtime: {
+        openOptionsPage: sinon.stub(),
+    },
 };
 
 // Import after mocking
@@ -283,6 +286,11 @@ describe("Background Logic", () => {
                 .getCalls()
                 .find((call) => call.args[0][`tab_${tabId}`]);
             expect(setCall).to.exist;
+        });
+
+        it("should open options page on open-history command", async () => {
+            await handleCommand("open-history");
+            expect(chromeMock.runtime.openOptionsPage.calledOnce).to.be.true;
         });
 
         it("should ignore unknown commands", async () => {
