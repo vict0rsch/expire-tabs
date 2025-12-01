@@ -10,14 +10,15 @@ export const TEST_DATA_PATH = path.join(
     "expired-tabs-test-data.json"
 );
 
-export const launchBrowser = async () => {
+export const launchBrowser = async ({ headless = "new" } = {}) => {
     return await puppeteer.launch({
-        headless: "new",
+        headless,
         args: [
             `--disable-extensions-except=${EXTENSION_PATH}`,
             `--load-extension=${EXTENSION_PATH}`,
             "--no-sandbox",
             "--disable-setuid-sandbox",
+            "--window-size=1278,798",
         ],
     });
 };
