@@ -30,6 +30,9 @@ jobs:
               if: steps.cache-node-modules.outputs.cache-hit != 'true'
               run: npm ci
 
+            - name: Install Puppeteer Browsers
+              run: npx puppeteer browsers install chrome
+
     build:
         needs: install
         runs-on: ubuntu-latest
@@ -78,6 +81,9 @@ jobs:
             - name: Install dependencies
               if: steps.cache-node-modules.outputs.cache-hit != 'true'
               run: npm ci
+
+            - name: Install Puppeteer Browsers
+              run: npx puppeteer browsers install chrome
 
             - name: Test
               run: npm test
