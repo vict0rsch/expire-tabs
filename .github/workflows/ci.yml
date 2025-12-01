@@ -2,8 +2,6 @@ name: CI
 
 on:
     push:
-        branches:
-            - main
     pull_request:
 
 jobs:
@@ -19,7 +17,15 @@ jobs:
                   node-version: "20"
                   cache: "npm"
 
+            - name: Cache node_modules
+              id: cache-node-modules
+              uses: actions/cache@v4
+              with:
+                  path: node_modules
+                  key: ${{ runner.os }}-node_modules-${{ hashFiles('package-lock.json') }}
+
             - name: Install dependencies
+              if: steps.cache-node-modules.outputs.cache-hit != 'true'
               run: npm ci
 
     build:
@@ -33,9 +39,16 @@ jobs:
               uses: actions/setup-node@v4
               with:
                   node-version: "20"
-                  cache: "npm"
+
+            - name: Restore node_modules
+              id: cache-node-modules
+              uses: actions/cache@v4
+              with:
+                  path: node_modules
+                  key: ${{ runner.os }}-node_modules-${{ hashFiles('package-lock.json') }}
 
             - name: Install dependencies
+              if: steps.cache-node-modules.outputs.cache-hit != 'true'
               run: npm ci
 
             - name: Build
@@ -52,9 +65,16 @@ jobs:
               uses: actions/setup-node@v4
               with:
                   node-version: "20"
-                  cache: "npm"
+
+            - name: Restore node_modules
+              id: cache-node-modules
+              uses: actions/cache@v4
+              with:
+                  path: node_modules
+                  key: ${{ runner.os }}-node_modules-${{ hashFiles('package-lock.json') }}
 
             - name: Install dependencies
+              if: steps.cache-node-modules.outputs.cache-hit != 'true'
               run: npm ci
 
             - name: Test
