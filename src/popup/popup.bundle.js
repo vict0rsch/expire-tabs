@@ -118,9 +118,15 @@
 
         // Load current settings
         const settings = await getSettings();
-        elements.timeoutInput.value = settings.timeout;
-        elements.unitSelect.value = settings.unit;
-        elements.historyLimitInput.value = settings.historyLimit;
+        if (elements.timeoutInput) {
+            elements.timeoutInput.value = settings.timeout;
+        }
+        if (elements.unitSelect) {
+            elements.unitSelect.value = settings.unit;
+        }
+        if (elements.historyLimitInput) {
+            elements.historyLimitInput.value = settings.historyLimit;
+        }
 
         // Handle Protection Button
         const [tab] = await chrome.tabs.query({
@@ -190,9 +196,11 @@
         }
 
         // Open history
-        elements.historyBtn.addEventListener("click", () =>
-            chrome.runtime.openOptionsPage()
-        );
+        if (elements.historyBtn) {
+            elements.historyBtn.addEventListener("click", () =>
+                chrome.runtime.openOptionsPage()
+            );
+        }
     });
 
 })();
