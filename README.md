@@ -20,6 +20,12 @@ Clicking the extension icon opens the settings popup where you can configure:
 -   **View Expired Tabs**: Quick access button to open the full history page.
 -   **Protect Tab**: Toggle protection for the currently active tab. Protected tabs (indicated by a 🔒 badge) will **never** be expired.
 
+### ⌨️ Shortcuts
+
+-   **Toggle Protection**: `Alt+Shift+P` (default) - Toggle protection for the current tab.
+-   **Open Popup**: `Alt+Shift+A` (default) - Open the extension popup.
+-   **Customize**: You can change these shortcuts in your browser's extension shortcuts settings (`chrome://extensions/shortcuts`).
+
 ### 📜 History (Options Page)
 
 The options page provides a dashboard for your expired tabs:
