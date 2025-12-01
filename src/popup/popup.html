@@ -14,26 +14,26 @@
         <link rel="stylesheet" href="popup.css" />
     </head>
     <body>
-        <div id="help-icon">
-            <span id="help-icon-text">?</span>
+        <div id="helpIcon">
+            <span id="helpIcon-text">?</span>
         </div>
         <div class="container">
             <h1>Expire Tabs ⏳</h1>
 
             <div class="protect-section">
-                <button id="protect-toggle">Loading...</button>
+                <button id="protectToggleBtn">Loading...</button>
             </div>
             <div class="form-container">
                 <div class="form-group">
-                    <label for="timeout">Close tabs after:</label>
+                    <label for="timeoutInput">Close tabs after:</label>
                     <div class="input-group timeout-group">
                         <input
                             type="number"
-                            id="timeout"
+                            id="timeoutInput"
                             min="1"
                             placeholder="e.g. 30"
                         />
-                        <select id="unit">
+                        <select id="unitSelect">
                             <option value="minutes">Minutes</option>
                             <option value="hours">Hours</option>
                             <option value="days">Days</option>
@@ -42,7 +42,7 @@
                 </div>
                 <div class="bottom-controls">
                     <div class="form-group history-limit-group">
-                        <label for="historyLimit">
+                        <label for="historyLimitInput">
                             <abbr title="Set to -1 for infinite history">
                                 History Limit
                             </abbr>
@@ -50,21 +50,21 @@
                         </label>
                         <input
                             type="number"
-                            id="historyLimit"
+                            id="historyLimitInput"
                             min="-1"
                             placeholder="e.g. 100"
                         />
                     </div>
-                    <button id="save">Save Settings&nbsp;&nbsp;💾</button>
-                    <div id="status" aria-live="polite"></div>
+                    <button id="saveBtn">Save Settings&nbsp;&nbsp;💾</button>
+                    <div id="statusMsg" aria-live="polite"></div>
                 </div>
             </div>
-            <button id="history" class="secondary-outline">
+            <button id="historyBtn" class="secondary-outline">
                 Expired Tabs History&nbsp;&nbsp;🗃️
             </button>
         </div>
-        <div id="help-modal" class="hidden">
-            <div id="help-modal-content">
+        <div id="helpModal" class="hidden">
+            <div id="helpModal-content">
                 <h2>Help</h2>
                 <p>
                     This extension closes tabs after they have been inactive for
@@ -77,6 +77,15 @@
                 <p>
                     You can protect a tab from being closed by clicking the
                     "Protect Tab" button.
+                </p>
+                <p>
+                    <strong>Shortcuts:</strong>
+                    <br />
+                    - Toggle protection: <code>Alt+Shift+P</code>
+                    <br />
+                    - Open Popup: <code>Alt+Shift+A</code>
+                    <br />
+                    - Open History: <code>Alt+Shift+H</code>
                 </p>
                 <p>
                     You can view the history of closed tabs by clicking the

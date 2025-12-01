@@ -86,31 +86,47 @@
     };
 
     document.addEventListener("DOMContentLoaded", async () => {
-        const timeoutInput = document.getElementById("timeout");
-        const unitInput = document.getElementById("unit");
-        const historyLimitInput = document.getElementById("historyLimit");
-        const saveButton = document.getElementById("save");
-        const historyButton = document.getElementById("history");
-        const status = document.getElementById("status");
-        const protectBtn = document.getElementById("protect-toggle");
-        const helpIcon = document.getElementById("help-icon");
-        const helpModal = document.getElementById("help-modal");
-
-        helpIcon.addEventListener("click", () => {
-            helpModal.classList.remove("hidden");
-        });
-
-        window.addEventListener("click", (event) => {
-            if (event.target === helpModal) {
-                helpModal.classList.add("hidden");
+        const elements = {};
+        for (const id of [
+            "timeoutInput",
+            "unitSelect",
+            "historyLimitInput",
+            "saveBtn",
+            "historyBtn",
+            "statusMsg",
+            "protectToggleBtn",
+            "helpIcon",
+            "helpModal",
+        ]) {
+            elements[id] = document.getElementById(id);
+            if (!elements[id]) {
+                console.error(`Element with id ${id} not found`);
             }
-        });
+        }
+
+        if (elements.helpIcon && elements.helpModal) {
+            elements.helpIcon.addEventListener("click", () => {
+                elements.helpModal.classList.remove("hidden");
+            });
+
+            window.addEventListener("click", (event) => {
+                if (event.target === elements.helpModal) {
+                    elements.helpModal.classList.add("hidden");
+                }
+            });
+        }
 
         // Load current settings
         const settings = await getSettings();
-        timeoutInput.value = settings.timeout;
-        unitInput.value = settings.unit;
-        historyLimitInput.value = settings.historyLimit;
+        if (elements.timeoutInput) {
+            elements.timeoutInput.value = settings.timeout;
+        }
+        if (elements.unitSelect) {
+            elements.unitSelect.value = settings.unit;
+        }
+        if (elements.historyLimitInput) {
+            elements.historyLimitInput.value = settings.historyLimit;
+        }
 
         // Handle Protection Button
         const [tab] = await chrome.tabs.query({
@@ -122,57 +138,69 @@
             const updateButton = async () => {
                 const isProtected = await getTabProtection(tab.id);
                 if (isProtected) {
-                    protectBtn.textContent = "Protected 🔒";
-                    protectBtn.classList.remove("secondary");
+                    elements.protectToggleBtn.textContent = "Protected 🔒";
+                    elements.protectToggleBtn.classList.remove("secondary");
                 } else {
-                    protectBtn.textContent = "Protect Tab 🛡️";
-                    protectBtn.classList.add("secondary");
+                    elements.protectToggleBtn.textContent = "Protect Tab 🛡️";
+                    elements.protectToggleBtn.classList.add("secondary");
                 }
                 return isProtected;
             };
 
             await updateButton();
 
-            protectBtn.addEventListener("click", async () => {
-                const isProtected = await getTabProtection(tab.id);
-                await setTabProtection(tab.id, !isProtected);
-                await updateButton();
-            });
+            if (elements.protectToggleBtn) {
+                elements.protectToggleBtn.addEventListener("click", async () => {
+                    const isProtected = await getTabProtection(tab.id);
+                    await setTabProtection(tab.id, !isProtected);
+                    await updateButton();
+                });
+            }
         } else {
-            protectBtn.classList.add("hidden");
+            if (elements.protectToggleBtn) {
+                elements.protectToggleBtn.classList.add("hidden");
+            }
         }
 
         // Save setting
-        saveButton.addEventListener("click", async () => {
-            status.classList.remove("error");
-            const timeout = parseInt(timeoutInput.value, 10);
-            const unit = unitInput.value;
-            const historyLimit = parseInt(historyLimitInput.value, 10);
+        if (elements.saveBtn) {
+            elements.saveBtn.addEventListener("click", async () => {
+                elements.statusMsg.classList.remove("error");
+                const timeout = parseInt(elements.timeoutInput.value, 10);
+                const unit = elements.unitSelect.value;
+                const historyLimit = parseInt(elements.historyLimitInput.value, 10);
 
-            if (isNaN(timeout) || timeout < 1) {
-                status.textContent = "Invalid time.";
-                status.classList.add("error");
-                return;
-            }
+                if (isNaN(timeout) || timeout < 1) {
+                    elements.statusMsg.textContent = "Invalid time.";
+                    elements.statusMsg.classList.add("error");
+                    return;
+                }
 
-            if (isNaN(historyLimit) || historyLimit < -1 || historyLimit === 0) {
-                status.textContent = "Invalid limit.";
-                status.classList.add("error");
-                return;
-            }
+                if (
+                    isNaN(historyLimit) ||
+                    historyLimit < -1 ||
+                    historyLimit === 0
+                ) {
+                    elements.statusMsg.textContent = "Invalid limit.";
+                    elements.statusMsg.classList.add("error");
+                    return;
+                }
 
-            await saveSettings({ timeout, unit, historyLimit });
-            status.textContent = "Settings saved.";
+                await saveSettings({ timeout, unit, historyLimit });
+                elements.statusMsg.textContent = "Settings saved.";
 
-            setTimeout(() => {
-                status.textContent = "";
-            }, 2000);
-        });
+                setTimeout(() => {
+                    elements.statusMsg.textContent = "";
+                }, 2000);
+            });
+        }
 
         // Open history
-        historyButton.addEventListener("click", () => {
-            chrome.runtime.openOptionsPage();
-        });
+        if (elements.historyBtn) {
+            elements.historyBtn.addEventListener("click", () =>
+                chrome.runtime.openOptionsPage()
+            );
+        }
     });
 
 })();

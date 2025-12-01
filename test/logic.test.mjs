@@ -25,6 +25,9 @@ const chromeMock = {
         setBadgeText: sinon.stub(),
         setBadgeBackgroundColor: sinon.stub(),
     },
+    runtime: {
+        openOptionsPage: sinon.stub(),
+    },
 };
 
 // Import after mocking
@@ -32,6 +35,7 @@ import {
     checkTabs,
     updateBadge,
     cleanUpStorage,
+    handleCommand,
 } from "../src/background/logic.js";
 
 describe("Background Logic", () => {
@@ -243,6 +247,61 @@ describe("Background Logic", () => {
             await cleanUpStorage();
 
             expect(chromeMock.storage.local.remove.called).to.be.false;
+        });
+    });
+
+    describe("handleCommand", () => {
+        it("should toggle protection ON when tab is unprotected", async () => {
+            const tabId = 101;
+            chromeMock.tabs.query.resolves([{ id: tabId }]);
+            chromeMock.storage.local.get
+                .withArgs([`protected_${tabId}`])
+                .resolves({});
+
+            await handleCommand("toggle-protection");
+
+            // Should set protected_101 to true
+            expect(
+                chromeMock.storage.local.set.calledWith({
+                    [`protected_${tabId}`]: true,
+                })
+            ).to.be.true;
+        });
+
+        it("should toggle protection OFF when tab is protected", async () => {
+            const tabId = 102;
+            chromeMock.tabs.query.resolves([{ id: tabId }]);
+            chromeMock.storage.local.get
+                .withArgs([`protected_${tabId}`])
+                .resolves({ [`protected_${tabId}`]: true });
+
+            await handleCommand("toggle-protection");
+
+            // Should remove protected_102
+            expect(
+                chromeMock.storage.local.remove.calledWith(`protected_${tabId}`)
+            ).to.be.true;
+            // Should update timestamp (tab_102)
+            const setCall = chromeMock.storage.local.set
+                .getCalls()
+                .find((call) => call.args[0][`tab_${tabId}`]);
+            expect(setCall).to.exist;
+        });
+
+        it("should open options page on open-history command", async () => {
+            await handleCommand("open-history");
+            expect(chromeMock.runtime.openOptionsPage.calledOnce).to.be.true;
+        });
+
+        it("should ignore unknown commands", async () => {
+            await handleCommand("unknown-command");
+            expect(chromeMock.tabs.query.called).to.be.false;
+        });
+
+        it("should do nothing if no active tab found", async () => {
+            chromeMock.tabs.query.resolves([]);
+            await handleCommand("toggle-protection");
+            expect(chromeMock.storage.local.get.called).to.be.false;
         });
     });
 });

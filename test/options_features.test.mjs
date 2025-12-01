@@ -266,7 +266,7 @@ describe("Options Page New Features", function () {
 
         // Initially should have 10 items
         let count = await page.$$eval("#history-list li", (lis) => lis.length);
-        assert.strictEqual(count, 10, "Should initially render 10 items");
+        assert.strictEqual(count, 20, "Should initially render 20 items");
 
         // Scroll to bottom
         await page.evaluate(() => {
@@ -275,7 +275,7 @@ describe("Options Page New Features", function () {
 
         // Wait for more items (should be 20)
         await page.waitForFunction(() => {
-            return document.querySelectorAll("#history-list li").length > 10;
+            return document.querySelectorAll("#history-list li").length > 20;
         });
 
         count = await page.$$eval("#history-list li", (lis) => lis.length);

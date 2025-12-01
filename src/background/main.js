@@ -1,5 +1,10 @@
 import { getTabKey, getProtectedKey } from "../utils/storage.js";
-import { checkTabs, updateBadge, cleanUpStorage } from "./logic.js";
+import {
+    checkTabs,
+    updateBadge,
+    cleanUpStorage,
+    handleCommand,
+} from "./logic.js";
 
 const ALARM_NAME = "check_tabs";
 
@@ -36,6 +41,9 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
     const protectedKey = getProtectedKey(tabId);
     await chrome.storage.local.remove([key, protectedKey]);
 });
+
+// Listen for commands (keyboard shortcuts)
+chrome.commands.onCommand.addListener(handleCommand);
 
 // Listen for storage changes to update badge
 chrome.storage.onChanged.addListener((changes, area) => {

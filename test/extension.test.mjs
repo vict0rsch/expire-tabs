@@ -32,11 +32,11 @@ describe("Expire Tabs Extension E2E", function () {
         assert.strictEqual(title, "Expire Tabs Settings");
 
         // Check for history button
-        const historyBtn = await page.$("#history");
+        const historyBtn = await page.$("#historyBtn");
         assert.ok(historyBtn, "History button should exist");
 
         // Check for history limit input
-        const historyLimitInput = await page.$("#historyLimit");
+        const historyLimitInput = await page.$("#historyLimitInput");
         assert.ok(historyLimitInput, "History limit input should exist");
     });
 
@@ -144,10 +144,10 @@ describe("Expire Tabs Extension E2E", function () {
         await page.goto(popupUrl);
 
         // Wait for protect button
-        await page.waitForSelector("#protect-toggle");
+        await page.waitForSelector("#protectToggleBtn");
 
         // Initial state: "Protect Tab" (unprotected)
-        let btnText = await page.$eval("#protect-toggle", (el) =>
+        let btnText = await page.$eval("#protectToggleBtn", (el) =>
             el.textContent.trim()
         );
         assert.ok(
@@ -156,15 +156,15 @@ describe("Expire Tabs Extension E2E", function () {
         );
 
         // Click to protect
-        await page.click("#protect-toggle");
+        await page.click("#protectToggleBtn");
 
         // Wait for text change
         await page.waitForFunction(() => {
-            const btn = document.querySelector("#protect-toggle");
+            const btn = document.querySelector("#protectToggleBtn");
             return btn.textContent.includes("Protected");
         });
 
-        btnText = await page.$eval("#protect-toggle", (el) => el.textContent);
+        btnText = await page.$eval("#protectToggleBtn", (el) => el.textContent);
         assert.ok(btnText.includes("Protected"), "State should be 'Protected'");
 
         // Verify in storage
@@ -185,11 +185,11 @@ describe("Expire Tabs Extension E2E", function () {
         );
 
         // Click to unprotect
-        await page.click("#protect-toggle");
+        await page.click("#protectToggleBtn");
 
         // Wait for text change
         await page.waitForFunction(() => {
-            const btn = document.querySelector("#protect-toggle");
+            const btn = document.querySelector("#protectToggleBtn");
             return btn.textContent.includes("Protect Tab");
         });
 

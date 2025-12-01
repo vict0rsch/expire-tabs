@@ -4,6 +4,7 @@ import {
     getTabKey,
     getProtectedKey,
     getTabProtection,
+    setTabProtection,
 } from "../utils/storage.js";
 
 /**
@@ -145,5 +146,28 @@ export async function cleanUpStorage() {
 
     if (keysToRemove.length > 0) {
         await chrome.storage.local.remove(keysToRemove);
+    }
+}
+
+/**
+ * Handles keyboard commands.
+ * @param {string} command
+ * @returns {Promise<void>}
+ */
+export async function handleCommand(command) {
+    if (command === "toggle-protection") {
+        const [tab] = await chrome.tabs.query({
+            active: true,
+            currentWindow: true,
+        });
+        if (tab) {
+            const isProtected = await getTabProtection(tab.id);
+            await setTabProtection(tab.id, !isProtected);
+            // Badge update is handled by storage listener in main.js or we can call it here explicitly
+            // Ideally, main.js listener handles it, but calling it here gives immediate feedback if listener is slow/detached
+            // For now, reliance on storage listener is fine as it preserves architecture
+        }
+    } else if (command === "open-history") {
+        chrome.runtime.openOptionsPage();
     }
 }
