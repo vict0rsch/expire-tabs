@@ -32,11 +32,11 @@ describe("Expire Tabs Extension E2E", function () {
         assert.strictEqual(title, "Expire Tabs Settings");
 
         // Check for history button
-        const historyBtn = await page.$("#history");
+        const historyBtn = await page.$("#historyBtn");
         assert.ok(historyBtn, "History button should exist");
 
         // Check for history limit input
-        const historyLimitInput = await page.$("#historyLimit");
+        const historyLimitInput = await page.$("#historyLimitInput");
         assert.ok(historyLimitInput, "History limit input should exist");
     });
 

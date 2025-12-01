@@ -38,7 +38,7 @@ body {
 }
 
 /* Component Styles */
-#status {
+#statusMsg {
     color: var(--primary-color);
     font-weight: bold;
     height: 20px;
@@ -48,16 +48,16 @@ body {
     transform: translateX(-50%);
 }
 
-#status.error {
+#statusMsg.error {
     color: #e53935;
 }
 
-#save {
+#saveBtn {
     height: 35px;
     flex: 1;
 }
 
-#history {
+#historyBtn {
     height: 35px;
     margin: 32px auto 16px auto;
     width: 75%;
