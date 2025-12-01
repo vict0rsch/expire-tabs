@@ -4,6 +4,8 @@ A simple browser extension (Chrome & Firefox) that closes your tabs after they h
 
 This extension was developed in part to add the "close tabs after inactivity" feature to [Zen](https://zen-browser.app) which is missing, coming from [Arc](https://arc.net).
 
+![Expire Tabs](./assets/demo.gif)
+
 ## Features
 
 ### ⚙️ Settings (Popup)
