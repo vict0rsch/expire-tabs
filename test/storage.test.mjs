@@ -62,6 +62,17 @@ describe("Storage Utils", () => {
             expect(settings.unit).to.equal("hours");
             expect(settings.historyLimit).to.equal(200);
         });
+
+        it("should respect falsy values like 0", async () => {
+            chromeMock.storage.local.get.resolves({
+                timeout: 0,
+                unit: "hours",
+                historyLimit: 0,
+            });
+            const settings = await getSettings();
+            expect(settings.timeout).to.equal(0);
+            expect(settings.historyLimit).to.equal(0);
+        });
     });
 
     describe("saveSettings", () => {

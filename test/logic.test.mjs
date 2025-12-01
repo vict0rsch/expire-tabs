@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import sinon from "sinon";
 
-import { getDefaults } from "../src/utils/config.js";
+import { getDefaults, unitToMs } from "../src/utils/config.js";
 // Mock browser API
 const chromeMock = {
     storage: {
@@ -32,12 +32,7 @@ const chromeMock = {
 };
 
 const defaults = getDefaults();
-const defaultUnitMultiplier =
-    defaults.unit === "minutes"
-        ? 60 * 1000
-        : defaults.unit === "hours"
-        ? 60 * 60 * 1000
-        : 24 * 60 * 60 * 1000;
+const defaultUnitMultiplier = unitToMs(defaults.unit);
 
 // Import after mocking
 import {

@@ -30,9 +30,9 @@ export const getSettings = async () => {
         "unit",
         "historyLimit",
     ]);
-    timeout = timeout || defaults.timeout;
-    unit = unit || defaults.unit;
-    historyLimit = historyLimit || defaults.historyLimit;
+    timeout = timeout ?? defaults.timeout;
+    unit = unit ?? defaults.unit;
+    historyLimit = historyLimit ?? defaults.historyLimit;
     return { timeout, unit, historyLimit };
 };
 

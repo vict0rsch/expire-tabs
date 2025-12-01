@@ -2,6 +2,25 @@
     'use strict';
 
     /**
+     * Converts a unit to milliseconds.
+     * Units are: minutes, hours, days.
+     * @throws {Error} If the unit is invalid.
+     * @param {string} unit - The unit to convert.
+     * @returns {number} The number of milliseconds in the unit.
+     */
+    const unitToMs = (unit) => {
+        switch (unit) {
+            case "minutes":
+                return 60 * 1000;
+            case "hours":
+                return 60 * 60 * 1000;
+            case "days":
+                return 24 * 60 * 60 * 1000;
+        }
+        throw new Error(`Invalid unit: ${unit}`);
+    };
+
+    /**
      * Retrieves closed tabs history from local storage.
      * @returns {Promise<ExpiredTab[]>}
      */
@@ -238,13 +257,7 @@
         const expiredTabs = await getExpiredTabs();
         return expiredTabs.filter((entry) => {
             let delta = value;
-            if (unit === "minutes") {
-                delta = value * 60 * 1000;
-            } else if (unit === "hours") {
-                delta = value * 60 * 60 * 1000;
-            } else if (unit === "days") {
-                delta = value * 24 * 60 * 60 * 1000;
-            }
+            delta = unitToMs(unit) * value;
             const time = new Date(entry.closedAt).getTime();
             const now = new Date().getTime();
             const diff = now - time;

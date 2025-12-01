@@ -9,15 +9,10 @@ import {
     clearStorage,
     loadTestData,
 } from "./testUtils.mjs";
-import { getDefaults } from "../src/utils/config.js";
+import { getDefaults, unitToMs } from "../src/utils/config.js";
 
 const defaults = getDefaults();
-const defaultUnitMultiplier =
-    defaults.unit === "minutes"
-        ? 60 * 1000
-        : defaults.unit === "hours"
-        ? 60 * 60 * 1000
-        : 24 * 60 * 60 * 1000;
+const defaultUnitMultiplier = unitToMs(defaults.unit);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 

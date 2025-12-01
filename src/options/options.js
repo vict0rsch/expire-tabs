@@ -3,7 +3,7 @@ import {
     clearExpiredTabs,
     removeExpiredTab,
 } from "../utils/storage.js";
-
+import { unitToMs } from "../utils/config.js";
 let allTabs = [];
 let currentTabsToRender = [];
 let renderedCount = 0;
@@ -218,13 +218,7 @@ const getOldEntries = async ({ value, unit }) => {
     const expiredTabs = await getExpiredTabs();
     return expiredTabs.filter((entry) => {
         let delta = value;
-        if (unit === "minutes") {
-            delta = value * 60 * 1000;
-        } else if (unit === "hours") {
-            delta = value * 60 * 60 * 1000;
-        } else if (unit === "days") {
-            delta = value * 24 * 60 * 60 * 1000;
-        }
+        delta = unitToMs(unit) * value;
         const time = new Date(entry.closedAt).getTime();
         const now = new Date().getTime();
         const diff = now - time;

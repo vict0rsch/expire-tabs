@@ -8,7 +8,8 @@
     };
 
     /**
-     * Returns a copy of the default settings.
+     * Get a copy of the default settings object.
+     * @returns {Object} The default settings.
      */
     const getDefaults = () => {
         return { ...defaultSettings };
@@ -44,9 +45,9 @@
             "unit",
             "historyLimit",
         ]);
-        timeout = timeout || defaults.timeout;
-        unit = unit || defaults.unit;
-        historyLimit = historyLimit || defaults.historyLimit;
+        timeout = timeout ?? defaults.timeout;
+        unit = unit ?? defaults.unit;
+        historyLimit = historyLimit ?? defaults.historyLimit;
         return { timeout, unit, historyLimit };
     };
 
