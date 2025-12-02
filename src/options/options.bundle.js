@@ -149,7 +149,7 @@
 
         if (tabsToRender.length === 0) {
             list.innerHTML =
-                "<li style='color: #6c757d;'>No matching closed tabs history.</li>";
+                "<li class='no-match' style='color: #6c757d;'>No matching closed tabs history.</li>";
             document.getElementById("deleteSearchResults").disabled = true;
             return;
         }

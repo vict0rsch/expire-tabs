@@ -18,6 +18,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 describe("Options Page New Features", function () {
     this.timeout(60000);
+    this.slow(500);
     let browser;
     let page;
     let extensionId;
@@ -297,5 +298,50 @@ describe("Options Page New Features", function () {
 
         count = await page.$$eval("#history-list li", (lis) => lis.length);
         assert.strictEqual(count, 25, "Should finally render all 25 items");
+    });
+
+    it("should filter tabs on search", async function () {
+        const optionsUrl = `chrome-extension://${extensionId}/options/options.html`;
+        await page.goto(optionsUrl);
+        const query = "Ap an";
+
+        // Seed data from JSON
+        await seedStorage(page, { expiredTabs: testData.expiredTabs });
+        const nTabsToRender = Math.min(
+            20,
+            testData.expiredTabs.filter((tab) =>
+                query
+                    .toLowerCase()
+                    .split(" ")
+                    .every(
+                        (term) =>
+                            tab.title.toLowerCase().includes(term) ||
+                            tab.url.toLowerCase().includes(term)
+                    )
+            ).length
+        );
+
+        await page.reload();
+        await page.waitForSelector("#history-list li");
+
+        // Search for "Ap" (Apple, Apricot)
+        await page.type("#search", query);
+
+        assert.strictEqual(
+            await page.$$eval("#history-list li", (lis) => lis.length),
+            nTabsToRender,
+            "Should have the correct number of items"
+        );
+
+        await page.type("#search", Math.random().toString());
+
+        assert.strictEqual(
+            await page.$$eval(
+                "#history-list li:not(.no-match)",
+                (lis) => lis.length
+            ),
+            0,
+            "Should have 0 items for random query"
+        );
     });
 });

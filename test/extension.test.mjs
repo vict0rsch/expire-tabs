@@ -8,6 +8,7 @@ import {
 
 describe("Expire Tabs Extension E2E", function () {
     this.timeout(60000);
+    this.slow(500);
     let browser;
     let page;
     let extensionId;
@@ -155,12 +156,6 @@ describe("Expire Tabs Extension E2E", function () {
 
         // Click to protect
         await page.click("#protectToggleBtn");
-
-        // Wait for text change
-        await page.waitForFunction(() => {
-            const btn = document.querySelector("#protectToggleBtn");
-            return btn.textContent.includes("Protected");
-        });
 
         btnText = await page.$eval("#protectToggleBtn", (el) => el.textContent);
         assert.ok(btnText.includes("Protected"), "State should be 'Protected'");
