@@ -15,7 +15,9 @@ describe("Expire Tabs Extension E2E", function () {
     let testData;
 
     before(async function () {
-        browser = await launchBrowser();
+        browser = await launchBrowser({
+            headless: !(process.env.headless === "0"),
+        });
         extensionId = await getExtensionId(browser);
         testData = loadTestData();
     });

@@ -8,7 +8,9 @@ describe("Popup Settings", function () {
     let extensionId;
 
     before(async function () {
-        browser = await launchBrowser();
+        browser = await launchBrowser({
+            headless: !(process.env.headless === "0"),
+        });
         extensionId = await getExtensionId(browser);
     });
 

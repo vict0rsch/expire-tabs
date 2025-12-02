@@ -3,13 +3,13 @@ import {
     clearExpiredTabs,
     removeExpiredTab,
 } from "../utils/storage.js";
-import { unitToMs } from "../utils/config.js";
+import { unitToMs, getDefaults } from "../utils/config.js";
 let allTabs = [];
 let currentTabsToRender = [];
 let renderedCount = 0;
-const BATCH_SIZE = 20;
-const LOAD_MARGIN = 5;
 let observer = null;
+
+const defaults = getDefaults();
 
 const escapeHtml = (unsafe) => {
     return (unsafe || "")
@@ -53,7 +53,7 @@ const setupObserver = () => {
 
     // We want to trigger when the (End - Margin)th element comes into view
     // e.g. rendered 25, margin 5. Trigger at 20th element (index 19).
-    let targetIndex = renderedCount - LOAD_MARGIN - 1;
+    let targetIndex = renderedCount - defaults.loadMargin - 1;
 
     // Safety check
     if (targetIndex < 0) targetIndex = 0;
@@ -86,7 +86,7 @@ const renderNextBatch = () => {
     const list = document.getElementById("history-list");
     const nextBatch = currentTabsToRender.slice(
         renderedCount,
-        renderedCount + BATCH_SIZE
+        renderedCount + defaults.batchSize
     );
 
     if (nextBatch.length === 0) return;

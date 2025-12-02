@@ -8,6 +8,7 @@ import {
     seedStorage,
     clearStorage,
     loadTestData,
+    sleep,
 } from "./testUtils.mjs";
 import { getDefaults, unitToMs } from "../src/utils/config.js";
 
@@ -25,7 +26,9 @@ describe("Options Page New Features", function () {
     let testData;
 
     before(async function () {
-        browser = await launchBrowser();
+        browser = await launchBrowser({
+            headless: !(process.env.headless === "0"),
+        });
         extensionId = await getExtensionId(browser);
         testData = loadTestData();
     });
@@ -257,12 +260,15 @@ describe("Options Page New Features", function () {
 
         // Seed 25 items (Batch size is 10)
         // We'll generate them to ensure we have enough
-        const tabs = Array.from({ length: 25 }, (_, i) => ({
-            id: `tab-${i}`,
-            title: `Tab ${i}`,
-            url: `http://example.com/${i}`,
-            closedAt: Date.now() - i * 1000,
-        }));
+        const tabs = Array.from(
+            { length: defaults.batchSize * 2 + 1 },
+            (_, i) => ({
+                id: `tab-${i}`,
+                title: `Tab ${i}`,
+                url: `http://example.com/${i}`,
+                closedAt: Date.now() - i * 1000,
+            })
+        );
 
         await seedStorage(page, { expiredTabs: tabs });
 
@@ -271,33 +277,42 @@ describe("Options Page New Features", function () {
 
         // Initially should have 10 items
         let count = await page.$$eval("#history-list li", (lis) => lis.length);
-        assert.strictEqual(count, 20, "Should initially render 20 items");
+        assert.strictEqual(
+            count,
+            defaults.batchSize,
+            `Should initially render ${defaults.batchSize} items`
+        );
 
         // Scroll to bottom
         await page.evaluate(() => {
             window.scrollTo(0, document.body.scrollHeight);
         });
 
-        // Wait for more items (should be 20)
-        await page.waitForFunction(() => {
-            return document.querySelectorAll("#history-list li").length > 20;
-        });
+        await page.waitForFunction(
+            (c) => document.querySelectorAll("#history-list li").length > c,
+            {},
+            count
+        );
 
         count = await page.$$eval("#history-list li", (lis) => lis.length);
-        assert.ok(count >= 20, "Should render next batch (20 items)");
+
+        assert.strictEqual(
+            count,
+            defaults.batchSize * 2,
+            `Should render next batch (${defaults.batchSize} items)`
+        );
 
         // Scroll again
         await page.evaluate(() => {
             window.scrollTo(0, document.body.scrollHeight);
         });
 
-        // Wait for all items (25)
-        await page.waitForFunction(() => {
-            return document.querySelectorAll("#history-list li").length === 25;
-        });
-
         count = await page.$$eval("#history-list li", (lis) => lis.length);
-        assert.strictEqual(count, 25, "Should finally render all 25 items");
+        assert.strictEqual(
+            count,
+            defaults.batchSize * 2,
+            "Should render all items"
+        );
     });
 
     it("should filter tabs on search", async function () {
@@ -308,7 +323,7 @@ describe("Options Page New Features", function () {
         // Seed data from JSON
         await seedStorage(page, { expiredTabs: testData.expiredTabs });
         const nTabsToRender = Math.min(
-            20,
+            defaults.batchSize,
             testData.expiredTabs.filter((tab) =>
                 query
                     .toLowerCase()

@@ -1,6 +1,14 @@
 (function () {
     'use strict';
 
+    const defaultSettings = {
+        timeout: 12,
+        unit: "hours",
+        historyLimit: 1000,
+        batchSize: 6,
+        loadMargin: 0,
+    };
+
     /**
      * Converts a unit to milliseconds.
      * Units are: minutes, hours, days.
@@ -18,6 +26,14 @@
                 return 24 * 60 * 60 * 1000;
         }
         throw new Error(`Invalid unit: ${unit}`);
+    };
+
+    /**
+     * Get a copy of the default settings object.
+     * @returns {Object} The default settings.
+     */
+    const getDefaults = () => {
+        return { ...defaultSettings };
     };
 
     /**
@@ -46,9 +62,9 @@
     let allTabs = [];
     let currentTabsToRender = [];
     let renderedCount = 0;
-    const BATCH_SIZE = 20;
-    const LOAD_MARGIN = 5;
     let observer = null;
+
+    const defaults = getDefaults();
 
     const escapeHtml = (unsafe) => {
         return (unsafe || "")
@@ -92,7 +108,7 @@
 
         // We want to trigger when the (End - Margin)th element comes into view
         // e.g. rendered 25, margin 5. Trigger at 20th element (index 19).
-        let targetIndex = renderedCount - LOAD_MARGIN - 1;
+        let targetIndex = renderedCount - defaults.loadMargin - 1;
 
         // Safety check
         if (targetIndex < 0) targetIndex = 0;
@@ -125,7 +141,7 @@
         const list = document.getElementById("history-list");
         const nextBatch = currentTabsToRender.slice(
             renderedCount,
-            renderedCount + BATCH_SIZE
+            renderedCount + defaults.batchSize
         );
 
         if (nextBatch.length === 0) return;

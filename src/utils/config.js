@@ -2,6 +2,8 @@ const defaultSettings = {
     timeout: 12,
     unit: "hours",
     historyLimit: 1000,
+    batchSize: 6,
+    loadMargin: 0,
 };
 
 /**

@@ -9,7 +9,9 @@ describe("Background Interactions", function () {
     let monitorPage; // We'll use options page to monitor storage/tabs
 
     before(async function () {
-        browser = await launchBrowser();
+        browser = await launchBrowser({
+            headless: !(process.env.headless === "0"),
+        });
         extensionId = await getExtensionId(browser);
     });
 
