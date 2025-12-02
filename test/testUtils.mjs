@@ -16,8 +16,12 @@ export const TEST_DATA_PATH = path.join(
  * @param {boolean} options.headless - Whether to launch the browser in headless mode.
  * @returns {Promise<Browser>} The launched browser.
  */
-export const launchBrowser = async ({ headless = "new" } = {}) => {
+export const launchBrowser = async ({
+    headless = true,
+    browser = "chrome",
+} = {}) => {
     return await puppeteer.launch({
+        browser,
         headless,
         args: [
             `--disable-extensions-except=${EXTENSION_PATH}`,

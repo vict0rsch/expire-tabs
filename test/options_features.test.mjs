@@ -28,6 +28,7 @@ describe("Options Page New Features", function () {
     before(async function () {
         browser = await launchBrowser({
             headless: !(process.env.headless === "0"),
+            browser: process.env.browser || "chrome",
         });
         extensionId = await getExtensionId(browser);
         testData = loadTestData();
