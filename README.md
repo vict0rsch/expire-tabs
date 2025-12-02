@@ -46,19 +46,6 @@ The options page provides a dashboard for your expired tabs:
 
 This project supports both Chrome and Firefox. It is mainly vibe-coded because I don't have enough time.
 
-### Development (Watch Mode)
-
-To start the development server and watch for changes (including HTML/CSS):
-
-```bash
-npm run watch
-```
-
-This runs Rollup in watch mode, which:
-
-1. Recompiles the JS bundles.
-2. Rebuilds the full extension (`dist/chrome` and `dist/firefox`) whenever JS, HTML, CSS, or Manifest files change.
-
 ### Build
 
 To build the extension for both Chrome and Firefox:
@@ -67,15 +54,26 @@ To build the extension for both Chrome and Firefox:
 npm run build
 ```
 
-This will generate:
+Using Rollup, this will:
 
--   `dist/chrome`
--   `dist/firefox`
+1. Compile the JS bundles.
+2. Build the full extension (`src/dist/chrome` and `src/dist/firefox`) using [Extension.js](https://extension.js.org)
+
+### Watch
+
+To start the development server and watch for changes (including HTML/CSS):
+
+```bash
+npm run watch # builds when src files or manifest change
+```
 
 ### Testing
 
 Run unit and E2E tests with:
 
 ```bash
-npm test
+# `npm run build` is run automatically before testing
+npm test # all tests
+npm run test:glob test/storage.test.mjs # specific test
+npm run test:glob test/*_*.mjs # multiple specific tests
 ```
