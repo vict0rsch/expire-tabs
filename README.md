@@ -1,4 +1,4 @@
-# expire-tabs
+# Expire Tabs Browser Extension
 
 A simple browser extension (Chrome & Firefox) that closes your tabs after they have been inactive for a specified amount of time. The timer resets whenever you use/focus a tab or when the tab is pinned.
 
