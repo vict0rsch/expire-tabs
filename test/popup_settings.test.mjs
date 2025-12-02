@@ -1,5 +1,10 @@
 import assert from "assert";
-import { launchBrowser, getExtensionId, clearStorage } from "./testUtils.mjs";
+import {
+    launchBrowser,
+    clearStorage,
+    getPopupUrl,
+    waitForFunction,
+} from "./testUtils.mjs";
 
 describe("Popup Settings", function () {
     this.timeout(60000);
@@ -8,11 +13,10 @@ describe("Popup Settings", function () {
     let extensionId;
 
     before(async function () {
-        browser = await launchBrowser({
+        ({ browser, extensionId } = await launchBrowser({
             headless: !(process.env.headless === "0"),
             browser: process.env.browser || "chrome",
-        });
-        extensionId = await getExtensionId(browser);
+        }));
     });
 
     after(async function () {
@@ -21,8 +25,8 @@ describe("Popup Settings", function () {
 
     beforeEach(async function () {
         page = await browser.newPage();
-        const popupUrl = `chrome-extension://${extensionId}/popup/popup.html`;
-        await page.goto(popupUrl);
+        const popupUrl = await getPopupUrl(browser, extensionId);
+        await page.goto(popupUrl, { waitUntil: "networkidle0" });
         await clearStorage(page);
     });
 
@@ -42,7 +46,7 @@ describe("Popup Settings", function () {
         await page.click("#saveBtn");
 
         // Wait for status message
-        await page.waitForFunction(() => {
+        await waitForFunction(page, () => {
             const msg = document.getElementById("statusMsg").textContent;
             return msg === "Settings saved.";
         });
@@ -71,7 +75,7 @@ describe("Popup Settings", function () {
         await page.click("#saveBtn");
 
         // Wait for error message
-        await page.waitForFunction(() => {
+        await waitForFunction(page, () => {
             const msg = document.getElementById("statusMsg");
             return (
                 msg.textContent === "Invalid time." &&
@@ -100,7 +104,7 @@ describe("Popup Settings", function () {
         await page.click("#saveBtn");
 
         // Wait for error message
-        await page.waitForFunction(() => {
+        await waitForFunction(page, () => {
             const msg = document.getElementById("statusMsg");
             return (
                 msg.textContent === "Invalid limit." &&
@@ -124,7 +128,7 @@ describe("Popup Settings", function () {
         await page.click("#saveBtn");
 
         // Wait for status message
-        await page.waitForFunction(() => {
+        await waitForFunction(page, () => {
             const msg = document.getElementById("statusMsg").textContent;
             return msg === "Settings saved.";
         });

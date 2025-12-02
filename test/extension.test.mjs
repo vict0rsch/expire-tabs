@@ -1,9 +1,12 @@
 import assert from "assert";
 import {
     launchBrowser,
-    getExtensionId,
     seedStorage,
     loadTestData,
+    getOptionsUrl,
+    getPopupUrl,
+    waitForFunction,
+    reloadPage,
 } from "./testUtils.mjs";
 
 describe("Expire Tabs Extension E2E", function () {
@@ -15,11 +18,10 @@ describe("Expire Tabs Extension E2E", function () {
     let testData;
 
     before(async function () {
-        browser = await launchBrowser({
+        ({ browser, extensionId } = await launchBrowser({
             headless: !(process.env.headless === "0"),
             browser: process.env.browser || "chrome",
-        });
-        extensionId = await getExtensionId(browser);
+        }));
         testData = loadTestData();
     });
 
@@ -28,9 +30,9 @@ describe("Expire Tabs Extension E2E", function () {
     });
 
     it("should load the popup and have expected elements", async function () {
-        const popupUrl = `chrome-extension://${extensionId}/popup/popup.html`;
+        const popupUrl = await getPopupUrl(browser, extensionId);
         page = await browser.newPage();
-        await page.goto(popupUrl);
+        await page.goto(popupUrl, { waitUntil: "networkidle0" });
 
         const title = await page.title();
         assert.strictEqual(title, "Expire Tabs Settings");
@@ -45,9 +47,9 @@ describe("Expire Tabs Extension E2E", function () {
     });
 
     it("should load options page and search", async function () {
-        const optionsUrl = `chrome-extension://${extensionId}/options/options.html`;
+        const optionsUrl = await getOptionsUrl(browser, extensionId);
         page = await browser.newPage();
-        await page.goto(optionsUrl);
+        await page.goto(optionsUrl, { waitUntil: "networkidle0" });
 
         // Check for search input
         const searchInput = await page.$("#search");
@@ -59,11 +61,11 @@ describe("Expire Tabs Extension E2E", function () {
     });
 
     it("should delete an item from history", async function () {
-        const optionsUrl = `chrome-extension://${extensionId}/options/options.html`;
+        const optionsUrl = await getOptionsUrl(browser, extensionId);
         page = await browser.newPage();
 
         // Navigate to options page first to set context
-        await page.goto(optionsUrl);
+        await page.goto(optionsUrl, { waitUntil: "networkidle0" });
 
         // Seed data from JSON + our specific test item
         const expiredTabs = [...testData.expiredTabs];
@@ -77,7 +79,7 @@ describe("Expire Tabs Extension E2E", function () {
 
         await seedStorage(page, { expiredTabs });
 
-        await page.reload(); // Ensure fresh render with seeded data
+        await reloadPage(page); // Ensure fresh render with seeded data
 
         // Find the item
         await page.waitForSelector("#history-list li");
@@ -117,7 +119,8 @@ describe("Expire Tabs Extension E2E", function () {
         );
         // Wait for list to update
         // We wait until the first item is NOT the one we deleted
-        await page.waitForFunction(
+        await waitForFunction(
+            page,
             (deletedId) => {
                 const firstItem = document.querySelector(
                     "#history-list li:first-child"
@@ -125,8 +128,8 @@ describe("Expire Tabs Extension E2E", function () {
                 // If list is empty or first item is different
                 return !firstItem || firstItem.dataset.id !== deletedId;
             },
-            { timeout: 5000 },
-            firstItemId
+            [firstItemId],
+            5000
         );
 
         const itemsAfter = await page.$$("#history-list li");
@@ -141,9 +144,9 @@ describe("Expire Tabs Extension E2E", function () {
     });
 
     it("should protect and unprotect a tab", async function () {
-        const popupUrl = `chrome-extension://${extensionId}/popup/popup.html`;
+        const popupUrl = await getPopupUrl(browser, extensionId);
         page = await browser.newPage();
-        await page.goto(popupUrl);
+        await page.goto(popupUrl, { waitUntil: "networkidle0" });
 
         // Wait for protect button
         await page.waitForSelector("#protectToggleBtn");
@@ -161,7 +164,7 @@ describe("Expire Tabs Extension E2E", function () {
         await page.click("#protectToggleBtn");
 
         // wait for text change
-        await page.waitForFunction(() => {
+        await waitForFunction(page, () => {
             const btn = document.querySelector("#protectToggleBtn");
             return !btn.textContent.includes("Protect Tab");
         });
@@ -190,7 +193,7 @@ describe("Expire Tabs Extension E2E", function () {
         await page.click("#protectToggleBtn");
 
         // Wait for text change
-        await page.waitForFunction(() => {
+        await waitForFunction(page, () => {
             const btn = document.querySelector("#protectToggleBtn");
             return btn.textContent.includes("Protect Tab");
         });
