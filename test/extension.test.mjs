@@ -159,6 +159,12 @@ describe("Expire Tabs Extension E2E", function () {
         // Click to protect
         await page.click("#protectToggleBtn");
 
+        // wait for text change
+        await page.waitForFunction(() => {
+            const btn = document.querySelector("#protectToggleBtn");
+            return !btn.textContent.includes("Protect Tab");
+        });
+
         btnText = await page.$eval("#protectToggleBtn", (el) => el.textContent);
         assert.ok(btnText.includes("Protected"), "State should be 'Protected'");
 

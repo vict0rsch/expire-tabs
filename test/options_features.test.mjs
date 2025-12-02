@@ -307,6 +307,12 @@ describe("Options Page New Features", function () {
             window.scrollTo(0, document.body.scrollHeight);
         });
 
+        await page.waitForFunction(
+            (c) => document.querySelectorAll("#history-list li").length > c,
+            {},
+            count
+        );
+
         count = await page.$$eval("#history-list li", (lis) => lis.length);
         assert.strictEqual(
             count,
