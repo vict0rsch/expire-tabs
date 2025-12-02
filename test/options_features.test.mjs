@@ -252,6 +252,7 @@ describe("Options Page New Features", function () {
     });
 
     it("should load more items on scroll (infinite scrolling)", async function () {
+        this.slow(1000);
         const optionsUrl = `chrome-extension://${extensionId}/options/options.html`;
         await page.goto(optionsUrl);
 
@@ -261,7 +262,7 @@ describe("Options Page New Features", function () {
         // Seed 25 items (Batch size is 10)
         // We'll generate them to ensure we have enough
         const tabs = Array.from(
-            { length: defaults.batchSize * 2 + 1 },
+            { length: defaults.batchSize * 3 + 1 },
             (_, i) => ({
                 id: `tab-${i}`,
                 title: `Tab ${i}`,
@@ -316,7 +317,7 @@ describe("Options Page New Features", function () {
         count = await page.$$eval("#history-list li", (lis) => lis.length);
         assert.strictEqual(
             count,
-            defaults.batchSize * 2,
+            defaults.batchSize * 3,
             "Should render all items"
         );
     });
