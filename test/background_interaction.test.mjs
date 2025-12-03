@@ -113,8 +113,17 @@ describe("Background Interactions", function () {
         // Get Tab B ID
         const tabBId = await monitorPage.evaluate(async () => {
             const tabs = await chrome.tabs.query({
-                url: "https://example2.com/",
+                url: "*://example2.com/*",
             });
+            if (!tabs.length) {
+                // Fallback to check all tabs for debugging if needed, or just throw
+                const allTabs = await chrome.tabs.query({});
+                throw new Error(
+                    `Tab not found. Open tabs: ${allTabs
+                        .map((t) => t.url)
+                        .join(", ")}`
+                );
+            }
             return tabs[0].id;
         });
 
