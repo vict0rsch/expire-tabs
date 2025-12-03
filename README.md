@@ -1,8 +1,8 @@
 # Expire Tabs Browser Extension
 
-    A simple browser extension (Chrome & Firefox) that closes your tabs after they have been inactive for a specified amount of time. The timer resets whenever you use/focus a tab or when the tab is pinned.
+A simple browser extension (Chrome & Firefox) that closes your tabs after they have been inactive for a specified amount of time. The timer resets whenever you use/focus a tab or when the tab is pinned.
 
-    This extension was developed in part to add the "close tabs after inactivity" feature to [Zen](https://zen-browser.app) which is missing, coming from [Arc](https://arc.net).
+This extension was developed in part to add the "close tabs after inactivity" feature to [Zen](https://zen-browser.app) which is missing, coming from [Arc](https://arc.net).
 
 ![Expire Tabs](./assets/demo.gif)
 
