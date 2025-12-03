@@ -1,3 +1,13 @@
+<p align="center">
+    <strong>Install from official stores 🔥</strong>
+    <br/>
+    <a href="https://chromewebstore.google.com/detail/expire-tabs/apcaggpljcadjgkdcdjlknklocmncdjk" target="_blank" rel="noopenner noreferrer"><strong>Chrome Web Store</strong></a>
+    &nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp;
+    <a href="https://addons.mozilla.org/en-US/firefox/addon/expire-tabs/" target="_blank" rel="noopenner noreferrer"><strong>Firefox Add-ons</strong></a>
+    <br/>
+    <br/>
+</p>
+
 # Expire Tabs Browser Extension
 
 A simple browser extension (Chrome & Firefox) that closes your tabs after they have been inactive for a specified amount of time. The timer resets whenever you use/focus a tab or when the tab is pinned.
@@ -45,6 +55,25 @@ The options page provides a dashboard for your expired tabs:
 ## Development
 
 This project supports both Chrome and Firefox. It is mainly vibe-coded because I don't have enough time.
+
+### Install from source
+
+```
+git clone https://github.com/vict0rsch/expire-tabs.git
+cd expire-tabs
+npm install
+npm run build
+```
+
+Or download the latest release zip file from the [releases page](https://github.com/vict0rsch/expire-tabs/releases).
+
+#### Chrome
+
+Then go to `chrome://extensions/` and enable "Developer mode". Click on "Load unpacked" and select the `manifest.json` `dist/chrome` directory.
+
+#### Firefox
+
+Then go to `about:debugging#/runtime/this-firefox` and click on "Load temporary add-on". Select the `manifest.json` `dist/firefox` directory. Be careful, you will lose the data stored in the extension if you quit the browser (see [Install a personal firefox web extension permanently](https://stackoverflow.com/questions/47363481/install-a-personal-firefox-web-extension-permanently) or [How to make a temporary add-on permanent](https://support.mozilla.org/si/questions/1406851)).
 
 ### Build
 
