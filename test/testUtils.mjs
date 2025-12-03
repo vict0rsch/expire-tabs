@@ -2,6 +2,7 @@ import puppeteer from "puppeteer";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
+import os from "os";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const EXTENSION_PATH = path.join(__dirname, "../src");
@@ -11,22 +12,71 @@ export const TEST_DATA_PATH = path.join(
 );
 
 /**
+ * Dedent a string. Assumes all lines are indented by the same amount.
+ * @param {string} string - The string to dedent.
+ * @returns {string} The dedented string.
+ */
+export const dedent = (string) =>
+    string
+        .split("\n")
+        .map((line) => line.trim())
+        .join("\n");
+
+/**
  * Launch a browser with the extension loaded.
  * @param {Object} options - The options to launch the browser with.
  * @param {boolean} options.headless - Whether to launch the browser in headless mode.
- * @returns {Promise<Browser>} The launched browser.
+ * @param {string} options.browser - The browser to launch (chrome or firefox).
+ * @returns {Promise<Object>} The launched browser and the extension ID.
  */
-export const launchBrowser = async ({ headless = "new" } = {}) => {
-    return await puppeteer.launch({
+export const launchBrowser = async ({
+    headless = true,
+    browser = "chrome",
+} = {}) => {
+    if (!["chrome", "firefox"].includes(browser)) {
+        throw new Error(
+            `Invalid browser: ${browser}, valid browsers are: chrome, firefox`
+        );
+    }
+    const extensionPath = path.join(EXTENSION_PATH, "dist", browser);
+
+    let userDataDir;
+    if (browser === "firefox") {
+        userDataDir = fs.mkdtempSync(
+            path.join(os.tmpdir(), "puppeteer_firefox_profile-")
+        );
+        let userJsContent = dedent(`
+            user_pref("security.csp.enable", false);
+            user_pref("security.fileuri.strict_origin_policy", false);
+            user_pref("extensions.webextensions.remote_debugging.enabled", true);
+            user_pref("xpinstall.signatures.required", false);
+            user_pref("extensions.webextensions.base-content-security-policy.v3", "script-src 'self' 'unsafe-eval'; object-src 'self';");
+        `);
+        fs.writeFileSync(path.join(userDataDir, "user.js"), userJsContent);
+    }
+
+    const _browser = await puppeteer.launch({
+        browser,
         headless,
+        pipe: true,
+        enableExtensions: [extensionPath],
+        userDataDir,
         args: [
-            `--disable-extensions-except=${EXTENSION_PATH}`,
-            `--load-extension=${EXTENSION_PATH}`,
             "--no-sandbox",
             "--disable-setuid-sandbox",
             "--window-size=1278,798",
         ],
     });
+    let extensionId;
+    if (browser === "firefox") {
+        extensionId = await getFirefoxExtensionId(_browser);
+    } else {
+        extensionId = await getChromeExtensionId(_browser);
+    }
+    return {
+        browser: _browser,
+        extensionId,
+    };
 };
 
 /**
@@ -34,7 +84,7 @@ export const launchBrowser = async ({ headless = "new" } = {}) => {
  * @param {Browser} browser - The browser to get the extension ID of.
  * @returns {Promise<string>} The ID of the extension.
  */
-export const getExtensionId = async (browser) => {
+export const getChromeExtensionId = async (browser) => {
     const extensionPage = await browser.newPage();
     await extensionPage.goto("chrome://extensions");
     await extensionPage.waitForSelector("extensions-manager");
@@ -86,6 +136,55 @@ export const getExtensionId = async (browser) => {
     return extensionId;
 };
 
+export const getFirefoxExtensionId = async (browser) => {
+    const extensionPage = await browser.newPage();
+    await extensionPage.goto("about:debugging#/runtime/this-firefox", {
+        waitUntil: "networkidle0",
+    });
+    const manifest = JSON.parse(
+        fs.readFileSync(path.join(EXTENSION_PATH, "manifest.json"), "utf-8")
+    );
+    const manifestId = manifest["firefox:browser_specific_settings"].gecko.id;
+    const extensionId = await extensionPage.evaluate((manifestId) => {
+        const extensionCard = [
+            ...document.querySelectorAll(
+                ".debug-target-item.qa-debug-target-item"
+            ),
+        ].find((card) => [card.textContent.includes(manifestId)]);
+        return [...extensionCard.querySelectorAll(".fieldpair")]
+            .find((div) => div.textContent.includes("Internal UUID"))
+            .querySelector("dd")
+            .textContent.trim();
+    }, manifestId);
+    await extensionPage.close();
+    return extensionId;
+};
+
+/**
+ * Get the options URL for a given browser.
+ * @param {Browser} browser - The browser to get the options URL for.
+ * @returns {Promise<string>} The options URL.
+ */
+export const getOptionsUrl = async (browser, extensionId) => {
+    const isChrome = (await browser.version()).includes("Chrome");
+    return `${
+        isChrome ? "chrome" : "moz"
+    }-extension://${extensionId}/options_ui/page.html`;
+};
+
+/**
+ * Get the popup URL for a given browser.
+ * @param {Browser} browser - The browser to get the popup URL for.
+ * @param {string} extensionId - The ID of the extension.
+ * @returns {Promise<string>} The popup URL.
+ */
+export const getPopupUrl = async (browser, extensionId) => {
+    const isChrome = (await browser.version()).includes("Chrome");
+    return `${
+        isChrome ? "chrome" : "moz"
+    }-extension://${extensionId}/action/default_popup.html`;
+};
+
 /**
  * Load the test data from the test data file.
  * @returns {Object} The test data.
@@ -125,4 +224,31 @@ export const clearStorage = async (page) => {
  */
 export const sleep = (ms) => {
     return new Promise((resolve) => setTimeout(resolve, ms));
+};
+
+/**
+ * Wait for a function to return true.
+ * @param {Page} page - The page to evaluate the function on.
+ * @param {Function} fn - The function to evaluate.
+ * @param {Object} args - The arguments to pass to the function.
+ * @param {number} timeout - The timeout in milliseconds.
+ * @returns {Promise<void>}
+ */
+export const waitForFunction = async (page, fn, args = [], timeout = 5000) => {
+    const start = Date.now();
+    while (Date.now() - start < timeout) {
+        const result = await page.evaluate(fn, ...args);
+        if (result) return;
+        await sleep(100);
+    }
+    throw new Error("Timeout waiting for function");
+};
+
+/**
+ * Reload the page safely for both Chrome and Firefox.
+ * @param {Page} page - The page to reload.
+ * @returns {Promise<void>}
+ */
+export const reloadPage = async (page) => {
+    await page.evaluate(() => location.reload());
 };

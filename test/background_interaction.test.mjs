@@ -1,5 +1,10 @@
 import assert from "assert";
-import { launchBrowser, getExtensionId, clearStorage } from "./testUtils.mjs";
+import {
+    launchBrowser,
+    clearStorage,
+    getOptionsUrl,
+    reloadPage,
+} from "./testUtils.mjs";
 
 describe("Background Interactions", function () {
     this.timeout(60000);
@@ -9,10 +14,10 @@ describe("Background Interactions", function () {
     let monitorPage; // We'll use options page to monitor storage/tabs
 
     before(async function () {
-        browser = await launchBrowser({
+        ({ browser, extensionId } = await launchBrowser({
             headless: !(process.env.headless === "0"),
-        });
-        extensionId = await getExtensionId(browser);
+            browser: process.env.browser || "chrome",
+        }));
     });
 
     after(async function () {
@@ -22,8 +27,8 @@ describe("Background Interactions", function () {
     beforeEach(async function () {
         // Open options page to act as a privileged context for checking storage
         monitorPage = await browser.newPage();
-        const optionsUrl = `chrome-extension://${extensionId}/options/options.html`;
-        await monitorPage.goto(optionsUrl);
+        const optionsUrl = await getOptionsUrl(browser, extensionId);
+        await monitorPage.goto(optionsUrl, { waitUntil: "networkidle0" });
         await clearStorage(monitorPage);
     });
 
@@ -42,7 +47,9 @@ describe("Background Interactions", function () {
         // Create a new tab (Tab A)
         const pageA = await browser.newPage();
         // Use a real URL instead of about:blank to ensure reliable events
-        await pageA.goto("https://example.com/");
+        await pageA.goto("https://example.com/", {
+            waitUntil: "domcontentloaded",
+        });
 
         // Get Tab A ID
         const tabAId = await monitorPage.evaluate(async () => {
@@ -55,7 +62,6 @@ describe("Background Interactions", function () {
                 return tabs[0].id;
             }
             // Fallback
-            console.log("Fallback to query all tabs");
             const matches = await chrome.tabs.query({
                 url: "*://example.com/*",
             });
@@ -100,13 +106,24 @@ describe("Background Interactions", function () {
     it("should remove tab data when tab is closed", async function () {
         // Create a new tab (Tab B)
         const pageB = await browser.newPage();
-        await pageB.goto("https://example2.com/");
+        await pageB.goto("https://example2.com/", {
+            waitUntil: "domcontentloaded",
+        });
 
         // Get Tab B ID
         const tabBId = await monitorPage.evaluate(async () => {
             const tabs = await chrome.tabs.query({
-                url: "https://example2.com/",
+                url: "*://example2.com/*",
             });
+            if (!tabs.length) {
+                // Fallback to check all tabs for debugging if needed, or just throw
+                const allTabs = await chrome.tabs.query({});
+                throw new Error(
+                    `Tab not found. Open tabs: ${allTabs
+                        .map((t) => t.url)
+                        .join(", ")}`
+                );
+            }
             return tabs[0].id;
         });
 

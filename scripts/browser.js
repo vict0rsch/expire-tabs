@@ -1,22 +1,23 @@
-import { launchBrowser, getExtensionId } from "../test/testUtils.mjs";
-import fs from "fs";
-import path from "path";
+const { launchBrowser } = await import("../test/testUtils.mjs");
+const fs = await import("fs");
+const path = await import("path");
 
-const currentDirectory = new URL(".", import.meta.url).pathname;
+const currentDirectory = process.cwd();
 const testDataPath = path.join(
     currentDirectory,
     "../test/expired-tabs-test-data.json"
 );
 const { expiredTabs } = JSON.parse(fs.readFileSync(testDataPath, "utf8"));
 
-const browser = await launchBrowser({ headless: false });
+const { browser, extensionId } = await launchBrowser({
+    headless: false,
+    browser: process.env.browser || "chrome",
+});
 
-const extensionId = await getExtensionId(browser);
+// const page = await browser.newPage();
 
-const page = await browser.newPage();
+// await page.goto(await getPopupUrl(browser, extensionId));
 
-await page.goto("chrome-extension://" + extensionId + "/popup/popup.html");
-
-await page.evaluate((expiredTabs) => {
-    chrome.storage.local.set({ expiredTabs });
-}, expiredTabs);
+// await page.evaluate((expiredTabs) => {
+//     chrome.storage.local.set({ expiredTabs });
+// }, expiredTabs);

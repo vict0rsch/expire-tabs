@@ -77,3 +77,16 @@ npm test # all tests
 npm run test:glob test/storage.test.mjs # specific test
 npm run test:glob test/*_*.mjs # multiple specific tests
 ```
+
+Tests defaults to Chrome. To test Firefox, run:
+
+```bash
+npm run test:firefox
+```
+
+or set the `browser` environment variable to `firefox`:
+
+```bash
+browser=firefox npm test
+browser=firefox npm run test:glob test/*_*.mjs # specific test
+```

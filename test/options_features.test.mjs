@@ -4,11 +4,13 @@ import { fileURLToPath } from "url";
 import fs from "fs";
 import {
     launchBrowser,
-    getExtensionId,
     seedStorage,
     clearStorage,
     loadTestData,
+    getOptionsUrl,
     sleep,
+    waitForFunction,
+    reloadPage,
 } from "./testUtils.mjs";
 import { getDefaults, unitToMs } from "../src/utils/config.js";
 
@@ -24,24 +26,36 @@ describe("Options Page New Features", function () {
     let page;
     let extensionId;
     let testData;
+    let optionsUrl;
+    const downloadPath = path.resolve(__dirname, "downloads");
 
     before(async function () {
-        browser = await launchBrowser({
+        // Ensure directory exists (if not handled by browser or test)
+        if (!fs.existsSync(downloadPath)) {
+            fs.mkdirSync(downloadPath);
+        }
+
+        ({ browser, extensionId } = await launchBrowser({
             headless: !(process.env.headless === "0"),
-        });
-        extensionId = await getExtensionId(browser);
+            browser: process.env.browser || "chrome",
+            downloadPath,
+        }));
         testData = loadTestData();
+        optionsUrl = await getOptionsUrl(browser, extensionId);
     });
 
     after(async function () {
         if (browser) await browser.close();
+        // Clean up download directory
+        if (fs.existsSync(downloadPath)) {
+            fs.rmSync(downloadPath, { recursive: true, force: true });
+        }
     });
 
     beforeEach(async function () {
         // Clear storage before each test
         page = await browser.newPage();
-        const optionsUrl = `chrome-extension://${extensionId}/options/options.html`;
-        await page.goto(optionsUrl);
+        await page.goto(optionsUrl, { waitUntil: "networkidle0" });
         await clearStorage(page);
     });
 
@@ -50,9 +64,6 @@ describe("Options Page New Features", function () {
     });
 
     it("should delete entries older than specified time", async function () {
-        const optionsUrl = `chrome-extension://${extensionId}/options/options.html`;
-        await page.goto(optionsUrl);
-
         const now = Date.now();
         const timeoutMs = (defaults.timeout + 1) * defaultUnitMultiplier;
 
@@ -75,7 +86,8 @@ describe("Options Page New Features", function () {
 
         await seedStorage(page, { expiredTabs: tabs });
 
-        await page.reload();
+        await reloadPage(page);
+        await sleep(500);
 
         // Wait for list to render
         await page.waitForSelector("#history-list li");
@@ -94,7 +106,7 @@ describe("Options Page New Features", function () {
         });
 
         // Wait for button to be enabled and show count
-        await page.waitForFunction(() => {
+        await waitForFunction(page, () => {
             const btn = document.getElementById("deleteOlderThanButton");
             const count =
                 document.getElementById("oldEntriesCount").textContent;
@@ -110,7 +122,7 @@ describe("Options Page New Features", function () {
         await page.click("#deleteOlderThanButton");
 
         // Wait for list to update
-        await page.waitForFunction(() => {
+        await waitForFunction(page, () => {
             return document.querySelectorAll("#history-list li").length === 1;
         });
 
@@ -129,9 +141,6 @@ describe("Options Page New Features", function () {
     });
 
     it("should delete search results", async function () {
-        const optionsUrl = `chrome-extension://${extensionId}/options/options.html`;
-        await page.goto(optionsUrl);
-
         // Seed data from JSON but add our specific searchable items to be sure
         const tabs = [
             {
@@ -159,14 +168,14 @@ describe("Options Page New Features", function () {
 
         await seedStorage(page, { expiredTabs: tabs });
 
-        await page.reload();
+        await reloadPage(page);
         await page.waitForSelector("#history-list li");
 
         // Search for "Ap" (Apple, Apricot)
         await page.type("#search", "Ap");
 
         // Wait for filter
-        await page.waitForFunction(() => {
+        await waitForFunction(page, () => {
             return document.querySelectorAll("#history-list li").length === 2;
         });
 
@@ -186,7 +195,7 @@ describe("Options Page New Features", function () {
         await page.click("#deleteSearchResults");
 
         // Wait for reload/update
-        await page.waitForFunction(() => {
+        await waitForFunction(page, () => {
             // Should be 1 item left (Banana) and search cleared
             const searchVal = document.getElementById("search").value;
             const lis = document.querySelectorAll("#history-list li");
@@ -201,27 +210,49 @@ describe("Options Page New Features", function () {
     });
 
     it("should trigger download history", async function () {
-        const optionsUrl = `chrome-extension://${extensionId}/options/options.html`;
-        await page.goto(optionsUrl);
-
-        // Setup download behavior
-        const downloadPath = path.resolve(__dirname, "downloads");
-        // Ensure directory exists
-        if (!fs.existsSync(downloadPath)) {
-            fs.mkdirSync(downloadPath);
+        // For Chrome/CDP, we need to set download behavior explicitly
+        // Firefox behavior is handled via preferences in launchBrowser
+        if (process.env.browser !== "firefox") {
+            const client = await page.target().createCDPSession();
+            await client.send("Browser.setDownloadBehavior", {
+                behavior: "allow",
+                downloadPath: downloadPath,
+            });
         }
-
-        const client = await page.target().createCDPSession();
-        await client.send("Browser.setDownloadBehavior", {
-            behavior: "allow",
-            downloadPath: downloadPath,
-        });
 
         // Seed data from JSON
         await seedStorage(page, { expiredTabs: testData.expiredTabs });
 
-        await page.reload();
+        await reloadPage(page);
         await page.waitForSelector("#downloadHistory");
+
+        if (process.env.browser === "firefox") {
+            // Firefox specific verification: intercept the Blob creation
+            const downloadData = await page.evaluate(async () => {
+                return new Promise((resolve) => {
+                    const originalCreateObjectURL = URL.createObjectURL;
+                    URL.createObjectURL = (blob) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.readAsText(blob);
+                        return originalCreateObjectURL(blob);
+                    };
+                    document.getElementById("downloadHistory").click();
+                });
+            });
+
+            const data = JSON.parse(downloadData);
+            assert.ok(
+                data.expiredTabs,
+                "Download data should contain expiredTabs"
+            );
+            assert.strictEqual(
+                data.expiredTabs.length,
+                testData.expiredTabs.length,
+                "Should have correct number of tabs"
+            );
+            return;
+        }
 
         // Click download
         await page.click("#downloadHistory");
@@ -248,13 +279,11 @@ describe("Options Page New Features", function () {
         if (downloadedFile) {
             fs.unlinkSync(path.join(downloadPath, downloadedFile));
         }
-        fs.rmdirSync(downloadPath);
+        // Don't remove the directory as it's reused or created in before
     });
 
     it("should load more items on scroll (infinite scrolling)", async function () {
         this.slow(1000);
-        const optionsUrl = `chrome-extension://${extensionId}/options/options.html`;
-        await page.goto(optionsUrl);
 
         // Set viewport to a fixed small size to ensure scrolling is possible
         await page.setViewport({ width: 800, height: 600 });
@@ -273,7 +302,7 @@ describe("Options Page New Features", function () {
 
         await seedStorage(page, { expiredTabs: tabs });
 
-        await page.reload();
+        await reloadPage(page);
         await page.waitForSelector("#history-list li");
 
         // Initially should have 10 items
@@ -289,10 +318,10 @@ describe("Options Page New Features", function () {
             window.scrollTo(0, document.body.scrollHeight);
         });
 
-        await page.waitForFunction(
+        await waitForFunction(
+            page,
             (c) => document.querySelectorAll("#history-list li").length > c,
-            {},
-            count
+            [count]
         );
 
         count = await page.$$eval("#history-list li", (lis) => lis.length);
@@ -308,10 +337,10 @@ describe("Options Page New Features", function () {
             window.scrollTo(0, document.body.scrollHeight);
         });
 
-        await page.waitForFunction(
+        await waitForFunction(
+            page,
             (c) => document.querySelectorAll("#history-list li").length > c,
-            {},
-            count
+            [count]
         );
 
         count = await page.$$eval("#history-list li", (lis) => lis.length);
@@ -323,8 +352,6 @@ describe("Options Page New Features", function () {
     });
 
     it("should filter tabs on search", async function () {
-        const optionsUrl = `chrome-extension://${extensionId}/options/options.html`;
-        await page.goto(optionsUrl);
         const query = "Ap an";
 
         // Seed data from JSON
@@ -343,25 +370,30 @@ describe("Options Page New Features", function () {
             ).length
         );
 
-        await page.reload();
+        await reloadPage(page);
         await page.waitForSelector("#history-list li");
 
         // Search for "Ap" (Apple, Apricot)
         await page.type("#search", query);
 
+        const count = await page.evaluate(
+            () => document.querySelectorAll("#history-list li").length
+        );
         assert.strictEqual(
-            await page.$$eval("#history-list li", (lis) => lis.length),
+            count,
             nTabsToRender,
             "Should have the correct number of items"
         );
 
         await page.type("#search", Math.random().toString());
 
+        const countNoMatch = await page.evaluate(
+            () =>
+                document.querySelectorAll("#history-list li:not(.no-match)")
+                    .length
+        );
         assert.strictEqual(
-            await page.$$eval(
-                "#history-list li:not(.no-match)",
-                (lis) => lis.length
-            ),
+            countNoMatch,
             0,
             "Should have 0 items for random query"
         );
