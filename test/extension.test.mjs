@@ -8,13 +8,16 @@ import {
 
 describe("Expire Tabs Extension E2E", function () {
     this.timeout(60000);
+    this.slow(500);
     let browser;
     let page;
     let extensionId;
     let testData;
 
     before(async function () {
-        browser = await launchBrowser();
+        browser = await launchBrowser({
+            headless: !(process.env.headless === "0"),
+        });
         extensionId = await getExtensionId(browser);
         testData = loadTestData();
     });
@@ -58,9 +61,6 @@ describe("Expire Tabs Extension E2E", function () {
         const optionsUrl = `chrome-extension://${extensionId}/options/options.html`;
         page = await browser.newPage();
 
-        // Listen to page logs
-        page.on("console", (msg) => console.log("PAGE LOG:", msg.text()));
-
         // Navigate to options page first to set context
         await page.goto(optionsUrl);
 
@@ -81,12 +81,12 @@ describe("Expire Tabs Extension E2E", function () {
         // Find the item
         await page.waitForSelector("#history-list li");
         const itemsBefore = await page.$$("#history-list li");
-        console.log(`Items before delete: ${itemsBefore.length}`);
         assert.ok(itemsBefore.length > 0, "Should have items");
 
         // Setup dialog handler BEFORE click
+        let dialogMessage = "";
         page.on("dialog", async (dialog) => {
-            console.log("Dialog appeared:", dialog.message());
+            dialogMessage = dialog.message();
             await dialog.accept();
         });
 
@@ -95,7 +95,6 @@ describe("Expire Tabs Extension E2E", function () {
             "#history-list li:first-child .title",
             (el) => el.textContent
         );
-        console.log(`First item title: ${firstItemTitle}`);
         assert.strictEqual(
             firstItemTitle,
             "Delete Me",
@@ -107,12 +106,14 @@ describe("Expire Tabs Extension E2E", function () {
             "#history-list li:first-child",
             (el) => el.dataset.id
         );
-        console.log(`First item data-id: ${firstItemId}`);
-
         // Click delete button on first item
-        console.log("Clicking delete button...");
         await page.click("#history-list li:first-child .delete-btn");
 
+        assert.strictEqual(
+            dialogMessage,
+            "Remove this item?",
+            "Dialog message should be correct"
+        );
         // Wait for list to update
         // We wait until the first item is NOT the one we deleted
         await page.waitForFunction(
@@ -158,10 +159,10 @@ describe("Expire Tabs Extension E2E", function () {
         // Click to protect
         await page.click("#protectToggleBtn");
 
-        // Wait for text change
+        // wait for text change
         await page.waitForFunction(() => {
             const btn = document.querySelector("#protectToggleBtn");
-            return btn.textContent.includes("Protected");
+            return !btn.textContent.includes("Protect Tab");
         });
 
         btnText = await page.$eval("#protectToggleBtn", (el) => el.textContent);

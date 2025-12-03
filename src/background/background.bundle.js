@@ -1,6 +1,41 @@
 (function () {
     'use strict';
 
+    const defaultSettings = {
+        timeout: 12,
+        unit: "hours",
+        historyLimit: 1000,
+        batchSize: 6,
+        loadMargin: 0,
+    };
+
+    /**
+     * Converts a unit to milliseconds.
+     * Units are: minutes, hours, days.
+     * @throws {Error} If the unit is invalid.
+     * @param {string} unit - The unit to convert.
+     * @returns {number} The number of milliseconds in the unit.
+     */
+    const unitToMs = (unit) => {
+        switch (unit) {
+            case "minutes":
+                return 60 * 1000;
+            case "hours":
+                return 60 * 60 * 1000;
+            case "days":
+                return 24 * 60 * 60 * 1000;
+        }
+        throw new Error(`Invalid unit: ${unit}`);
+    };
+
+    /**
+     * Get a copy of the default settings object.
+     * @returns {Object} The default settings.
+     */
+    const getDefaults = () => {
+        return { ...defaultSettings };
+    };
+
     /**
      * Storage utility functions for Expire Tabs extension.
      */
@@ -25,11 +60,15 @@
      * @returns {Promise<Settings>}
      */
     const getSettings = async () => {
-        const {
-            timeout = 30,
-            unit = "minutes",
-            historyLimit = 100,
-        } = await chrome.storage.local.get(["timeout", "unit", "historyLimit"]);
+        const defaults = getDefaults();
+        let { timeout, unit, historyLimit } = await chrome.storage.local.get([
+            "timeout",
+            "unit",
+            "historyLimit",
+        ]);
+        timeout = timeout ?? defaults.timeout;
+        unit = unit ?? defaults.unit;
+        historyLimit = historyLimit ?? defaults.historyLimit;
         return { timeout, unit, historyLimit };
     };
 
@@ -125,14 +164,7 @@
     async function checkTabs() {
         const { timeout, unit } = await getSettings();
 
-        let multiplier = 60 * 1000; // default minutes
-        if (unit === "hours") {
-            multiplier = 60 * 60 * 1000;
-        } else if (unit === "days") {
-            multiplier = 24 * 60 * 60 * 1000;
-        }
-
-        const timeoutMs = timeout * multiplier;
+        const timeoutMs = unitToMs(unit) * timeout;
         const now = Date.now();
 
         const tabs = await chrome.tabs.query({});

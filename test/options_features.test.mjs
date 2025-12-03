@@ -8,19 +8,27 @@ import {
     seedStorage,
     clearStorage,
     loadTestData,
+    sleep,
 } from "./testUtils.mjs";
+import { getDefaults, unitToMs } from "../src/utils/config.js";
+
+const defaults = getDefaults();
+const defaultUnitMultiplier = unitToMs(defaults.unit);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 describe("Options Page New Features", function () {
     this.timeout(60000);
+    this.slow(500);
     let browser;
     let page;
     let extensionId;
     let testData;
 
     before(async function () {
-        browser = await launchBrowser();
+        browser = await launchBrowser({
+            headless: !(process.env.headless === "0"),
+        });
         extensionId = await getExtensionId(browser);
         testData = loadTestData();
     });
@@ -46,7 +54,7 @@ describe("Options Page New Features", function () {
         await page.goto(optionsUrl);
 
         const now = Date.now();
-        const minute = 60 * 1000;
+        const timeoutMs = (defaults.timeout + 1) * defaultUnitMultiplier;
 
         // Use data from JSON but override closedAt relative to now
         // Assuming testData has at least 2 items
@@ -55,13 +63,13 @@ describe("Options Page New Features", function () {
                 ...testData.expiredTabs[0],
                 id: "old-tab",
                 title: "Old Tab",
-                closedAt: now - 35 * minute,
+                closedAt: now - timeoutMs,
             },
             {
                 ...testData.expiredTabs[1],
                 id: "new-tab",
                 title: "New Tab",
-                closedAt: now - 10 * minute,
+                closedAt: now - timeoutMs / 2,
             },
         ];
 
@@ -75,8 +83,8 @@ describe("Options Page New Features", function () {
         assert.strictEqual(items.length, 2, "Should have 2 items initially");
 
         // Interact with "Delete older than" inputs
-        await page.type("#deleteOlderThan", "30");
-        await page.select("#unit", "minutes");
+        await page.type("#deleteOlderThan", defaults.timeout.toString());
+        await page.select("#unit", defaults.unit);
 
         // Trigger change event to update button state
         await page.evaluate(() => {
@@ -244,6 +252,7 @@ describe("Options Page New Features", function () {
     });
 
     it("should load more items on scroll (infinite scrolling)", async function () {
+        this.slow(1000);
         const optionsUrl = `chrome-extension://${extensionId}/options/options.html`;
         await page.goto(optionsUrl);
 
@@ -252,12 +261,15 @@ describe("Options Page New Features", function () {
 
         // Seed 25 items (Batch size is 10)
         // We'll generate them to ensure we have enough
-        const tabs = Array.from({ length: 25 }, (_, i) => ({
-            id: `tab-${i}`,
-            title: `Tab ${i}`,
-            url: `http://example.com/${i}`,
-            closedAt: Date.now() - i * 1000,
-        }));
+        const tabs = Array.from(
+            { length: defaults.batchSize * 3 + 1 },
+            (_, i) => ({
+                id: `tab-${i}`,
+                title: `Tab ${i}`,
+                url: `http://example.com/${i}`,
+                closedAt: Date.now() - i * 1000,
+            })
+        );
 
         await seedStorage(page, { expiredTabs: tabs });
 
@@ -266,32 +278,92 @@ describe("Options Page New Features", function () {
 
         // Initially should have 10 items
         let count = await page.$$eval("#history-list li", (lis) => lis.length);
-        assert.strictEqual(count, 20, "Should initially render 20 items");
+        assert.strictEqual(
+            count,
+            defaults.batchSize,
+            `Should initially render ${defaults.batchSize} items`
+        );
 
         // Scroll to bottom
         await page.evaluate(() => {
             window.scrollTo(0, document.body.scrollHeight);
         });
 
-        // Wait for more items (should be 20)
-        await page.waitForFunction(() => {
-            return document.querySelectorAll("#history-list li").length > 20;
-        });
+        await page.waitForFunction(
+            (c) => document.querySelectorAll("#history-list li").length > c,
+            {},
+            count
+        );
 
         count = await page.$$eval("#history-list li", (lis) => lis.length);
-        assert.ok(count >= 20, "Should render next batch (20 items)");
+
+        assert.strictEqual(
+            count,
+            defaults.batchSize * 2,
+            `Should render next batch (${defaults.batchSize} items)`
+        );
 
         // Scroll again
         await page.evaluate(() => {
             window.scrollTo(0, document.body.scrollHeight);
         });
 
-        // Wait for all items (25)
-        await page.waitForFunction(() => {
-            return document.querySelectorAll("#history-list li").length === 25;
-        });
+        await page.waitForFunction(
+            (c) => document.querySelectorAll("#history-list li").length > c,
+            {},
+            count
+        );
 
         count = await page.$$eval("#history-list li", (lis) => lis.length);
-        assert.strictEqual(count, 25, "Should finally render all 25 items");
+        assert.strictEqual(
+            count,
+            defaults.batchSize * 3,
+            "Should render all items"
+        );
+    });
+
+    it("should filter tabs on search", async function () {
+        const optionsUrl = `chrome-extension://${extensionId}/options/options.html`;
+        await page.goto(optionsUrl);
+        const query = "Ap an";
+
+        // Seed data from JSON
+        await seedStorage(page, { expiredTabs: testData.expiredTabs });
+        const nTabsToRender = Math.min(
+            defaults.batchSize,
+            testData.expiredTabs.filter((tab) =>
+                query
+                    .toLowerCase()
+                    .split(" ")
+                    .every(
+                        (term) =>
+                            tab.title.toLowerCase().includes(term) ||
+                            tab.url.toLowerCase().includes(term)
+                    )
+            ).length
+        );
+
+        await page.reload();
+        await page.waitForSelector("#history-list li");
+
+        // Search for "Ap" (Apple, Apricot)
+        await page.type("#search", query);
+
+        assert.strictEqual(
+            await page.$$eval("#history-list li", (lis) => lis.length),
+            nTabsToRender,
+            "Should have the correct number of items"
+        );
+
+        await page.type("#search", Math.random().toString());
+
+        assert.strictEqual(
+            await page.$$eval(
+                "#history-list li:not(.no-match)",
+                (lis) => lis.length
+            ),
+            0,
+            "Should have 0 items for random query"
+        );
     });
 });

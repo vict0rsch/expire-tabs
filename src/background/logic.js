@@ -6,7 +6,7 @@ import {
     getTabProtection,
     setTabProtection,
 } from "../utils/storage.js";
-
+import { unitToMs } from "../utils/config.js";
 /**
  * Checks all tabs and closes them if they have expired.
  * Fetches storage data in bulk to optimize performance.
@@ -15,14 +15,7 @@ import {
 export async function checkTabs() {
     const { timeout, unit } = await getSettings();
 
-    let multiplier = 60 * 1000; // default minutes
-    if (unit === "hours") {
-        multiplier = 60 * 60 * 1000;
-    } else if (unit === "days") {
-        multiplier = 24 * 60 * 60 * 1000;
-    }
-
-    const timeoutMs = timeout * multiplier;
+    const timeoutMs = unitToMs(unit) * timeout;
     const now = Date.now();
 
     const tabs = await chrome.tabs.query({});

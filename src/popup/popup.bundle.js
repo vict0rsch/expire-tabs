@@ -1,6 +1,22 @@
 (function () {
     'use strict';
 
+    const defaultSettings = {
+        timeout: 12,
+        unit: "hours",
+        historyLimit: 1000,
+        batchSize: 6,
+        loadMargin: 0,
+    };
+
+    /**
+     * Get a copy of the default settings object.
+     * @returns {Object} The default settings.
+     */
+    const getDefaults = () => {
+        return { ...defaultSettings };
+    };
+
     /**
      * Storage utility functions for Expire Tabs extension.
      */
@@ -25,11 +41,15 @@
      * @returns {Promise<Settings>}
      */
     const getSettings = async () => {
-        const {
-            timeout = 30,
-            unit = "minutes",
-            historyLimit = 100,
-        } = await chrome.storage.local.get(["timeout", "unit", "historyLimit"]);
+        const defaults = getDefaults();
+        let { timeout, unit, historyLimit } = await chrome.storage.local.get([
+            "timeout",
+            "unit",
+            "historyLimit",
+        ]);
+        timeout = timeout ?? defaults.timeout;
+        unit = unit ?? defaults.unit;
+        historyLimit = historyLimit ?? defaults.historyLimit;
         return { timeout, unit, historyLimit };
     };
 

@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import sinon from "sinon";
 
+import { getDefaults, unitToMs } from "../src/utils/config.js";
 // Mock browser API
 const chromeMock = {
     storage: {
@@ -30,6 +31,9 @@ const chromeMock = {
     },
 };
 
+const defaults = getDefaults();
+const defaultUnitMultiplier = unitToMs(defaults.unit);
+
 // Import after mocking
 import {
     checkTabs,
@@ -51,16 +55,16 @@ describe("Background Logic", () => {
 
     describe("checkTabs", () => {
         it("should close expired tabs", async () => {
-            // Settings: 30 minutes
             chromeMock.storage.local.get
                 .withArgs(["timeout", "unit", "historyLimit"])
-                .resolves({ timeout: 30, unit: "minutes" });
+                .resolves({ timeout: defaults.timeout, unit: defaults.unit });
             chromeMock.storage.local.get
                 .withArgs(["expiredTabs"])
                 .resolves({ expiredTabs: [] });
 
             const now = Date.now();
-            const expiredTime = now - 31 * 60 * 1000; // 31 minutes ago
+            const expiredTime =
+                now - (defaults.timeout + 1) * defaultUnitMultiplier;
 
             // Mock tabs
             const tabs = [
@@ -99,7 +103,10 @@ describe("Background Logic", () => {
                     return Promise.resolve(storageData);
                 }
                 if (Array.isArray(keys) && keys.includes("timeout")) {
-                    return Promise.resolve({ timeout: 30, unit: "minutes" });
+                    return Promise.resolve({
+                        timeout: defaults.timeout,
+                        unit: defaults.unit,
+                    });
                 }
                 if (Array.isArray(keys) && keys.includes("expiredTabs")) {
                     return Promise.resolve({ expiredTabs: [] });
@@ -121,7 +128,8 @@ describe("Background Logic", () => {
 
         it("should not close protected tabs", async () => {
             const now = Date.now();
-            const expiredTime = now - 31 * 60 * 1000;
+            const expiredTime =
+                now - (defaults.timeout + 1) * defaultUnitMultiplier;
 
             const tabs = [
                 { id: 1, active: false, pinned: false, audible: false },
@@ -138,7 +146,10 @@ describe("Background Logic", () => {
                     return Promise.resolve(storageData);
                 }
                 if (Array.isArray(keys) && keys.includes("timeout")) {
-                    return Promise.resolve({ timeout: 30, unit: "minutes" });
+                    return Promise.resolve({
+                        timeout: defaults.timeout,
+                        unit: defaults.unit,
+                    });
                 }
                 return Promise.resolve({});
             });
@@ -151,7 +162,10 @@ describe("Background Logic", () => {
         it("should not close audible or pinned tabs", async () => {
             chromeMock.storage.local.get.callsFake((keys) => {
                 if (Array.isArray(keys) && keys.includes("timeout")) {
-                    return Promise.resolve({ timeout: 30, unit: "minutes" });
+                    return Promise.resolve({
+                        timeout: defaults.timeout,
+                        unit: defaults.unit,
+                    });
                 }
                 return Promise.resolve({});
             });
