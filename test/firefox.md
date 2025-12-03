@@ -35,7 +35,9 @@ Firefox support in Puppeteer is transitioning to WebDriver BiDi. Features that r
 
 **The Solution:**
 
--   **Skip Incompatible Tests**: We explicitly skip tests that rely on specific CDP features not available in Firefox (e.g., the "trigger download history" test) using `if (process.env.browser === "firefox") this.skip();`.
+-   **Mocking/Intercepting**: For tests relying on file downloads (which are flaky or unsupported in Puppeteer+Firefox headless), we intercept the download trigger logic within the page.
+    -   Example: In "should trigger download history", we mock `URL.createObjectURL` to verify that the extension generates the correct JSON blob, instead of trying to verify the file existence on the OS filesystem.
+-   **Skip Incompatible Tests**: We skip tests that rely on specific CDP features _only if_ logic verification is impossible without them. (We managed to avoid skipping the download test!).
 
 ## 4. Test Helpers Refactoring
 

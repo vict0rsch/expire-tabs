@@ -27,11 +27,18 @@ describe("Options Page New Features", function () {
     let extensionId;
     let testData;
     let optionsUrl;
+    const downloadPath = path.resolve(__dirname, "downloads");
 
     before(async function () {
+        // Ensure directory exists (if not handled by browser or test)
+        if (!fs.existsSync(downloadPath)) {
+            fs.mkdirSync(downloadPath);
+        }
+
         ({ browser, extensionId } = await launchBrowser({
             headless: !(process.env.headless === "0"),
             browser: process.env.browser || "chrome",
+            downloadPath,
         }));
         testData = loadTestData();
         optionsUrl = await getOptionsUrl(browser, extensionId);
@@ -39,6 +46,10 @@ describe("Options Page New Features", function () {
 
     after(async function () {
         if (browser) await browser.close();
+        // Clean up download directory
+        if (fs.existsSync(downloadPath)) {
+            fs.rmSync(downloadPath, { recursive: true, force: true });
+        }
     });
 
     beforeEach(async function () {
@@ -199,27 +210,49 @@ describe("Options Page New Features", function () {
     });
 
     it("should trigger download history", async function () {
-        if (process.env.browser === "firefox") this.skip();
-        await page.goto(optionsUrl, { waitUntil: "networkidle0" });
-
-        // Setup download behavior
-        const downloadPath = path.resolve(__dirname, "downloads");
-        // Ensure directory exists
-        if (!fs.existsSync(downloadPath)) {
-            fs.mkdirSync(downloadPath);
+        // For Chrome/CDP, we need to set download behavior explicitly
+        // Firefox behavior is handled via preferences in launchBrowser
+        if (process.env.browser !== "firefox") {
+            const client = await page.target().createCDPSession();
+            await client.send("Browser.setDownloadBehavior", {
+                behavior: "allow",
+                downloadPath: downloadPath,
+            });
         }
-
-        const client = await page.target().createCDPSession();
-        await client.send("Browser.setDownloadBehavior", {
-            behavior: "allow",
-            downloadPath: downloadPath,
-        });
 
         // Seed data from JSON
         await seedStorage(page, { expiredTabs: testData.expiredTabs });
 
         await reloadPage(page);
         await page.waitForSelector("#downloadHistory");
+
+        if (process.env.browser === "firefox") {
+            // Firefox specific verification: intercept the Blob creation
+            const downloadData = await page.evaluate(async () => {
+                return new Promise((resolve) => {
+                    const originalCreateObjectURL = URL.createObjectURL;
+                    URL.createObjectURL = (blob) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.readAsText(blob);
+                        return originalCreateObjectURL(blob);
+                    };
+                    document.getElementById("downloadHistory").click();
+                });
+            });
+
+            const data = JSON.parse(downloadData);
+            assert.ok(
+                data.expiredTabs,
+                "Download data should contain expiredTabs"
+            );
+            assert.strictEqual(
+                data.expiredTabs.length,
+                testData.expiredTabs.length,
+                "Should have correct number of tabs"
+            );
+            return;
+        }
 
         // Click download
         await page.click("#downloadHistory");
@@ -246,7 +279,7 @@ describe("Options Page New Features", function () {
         if (downloadedFile) {
             fs.unlinkSync(path.join(downloadPath, downloadedFile));
         }
-        fs.rmdirSync(downloadPath);
+        // Don't remove the directory as it's reused or created in before
     });
 
     it("should load more items on scroll (infinite scrolling)", async function () {

@@ -2,6 +2,7 @@ import puppeteer from "puppeteer";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
+import os from "os";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const EXTENSION_PATH = path.join(__dirname, "../src");
@@ -11,9 +12,21 @@ export const TEST_DATA_PATH = path.join(
 );
 
 /**
+ * Dedent a string. Assumes all lines are indented by the same amount.
+ * @param {string} string - The string to dedent.
+ * @returns {string} The dedented string.
+ */
+export const dedent = (string) =>
+    string
+        .split("\n")
+        .map((line) => line.trim())
+        .join("\n");
+
+/**
  * Launch a browser with the extension loaded.
  * @param {Object} options - The options to launch the browser with.
  * @param {boolean} options.headless - Whether to launch the browser in headless mode.
+ * @param {string} options.browser - The browser to launch (chrome or firefox).
  * @returns {Promise<Object>} The launched browser and the extension ID.
  */
 export const launchBrowser = async ({
@@ -26,11 +39,28 @@ export const launchBrowser = async ({
         );
     }
     const extensionPath = path.join(EXTENSION_PATH, "dist", browser);
+
+    let userDataDir;
+    if (browser === "firefox") {
+        userDataDir = fs.mkdtempSync(
+            path.join(os.tmpdir(), "puppeteer_firefox_profile-")
+        );
+        let userJsContent = dedent(`
+            user_pref("security.csp.enable", false);
+            user_pref("security.fileuri.strict_origin_policy", false);
+            user_pref("extensions.webextensions.remote_debugging.enabled", true);
+            user_pref("xpinstall.signatures.required", false);
+            user_pref("extensions.webextensions.base-content-security-policy.v3", "script-src 'self' 'unsafe-eval'; object-src 'self';");
+        `);
+        fs.writeFileSync(path.join(userDataDir, "user.js"), userJsContent);
+    }
+
     const _browser = await puppeteer.launch({
         browser,
         headless,
         pipe: true,
         enableExtensions: [extensionPath],
+        userDataDir,
         args: [
             "--no-sandbox",
             "--disable-setuid-sandbox",
