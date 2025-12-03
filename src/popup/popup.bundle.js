@@ -5,8 +5,8 @@
         timeout: 12,
         unit: "hours",
         historyLimit: 1000,
-        batchSize: 6,
-        loadMargin: 0,
+        batchSize: 25,
+        loadMargin: 5,
     };
 
     /**
