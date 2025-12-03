@@ -16,7 +16,7 @@ const triggerExtensionBuild = () => {
             // Set a new timeout
             buildTimeout = setTimeout(() => {
                 const command =
-                    'concurrently "extension build --zip --browser=chrome" "extension build --zip --browser=firefox"';
+                    'concurrently "extension build --zip --zip-source" "extension build --zip --browser=firefox"';
 
                 console.log(`\n📦 Triggering extension build...\n`);
                 // Use shell: true for command chaining with &&
