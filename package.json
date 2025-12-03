@@ -1,6 +1,6 @@
 {
     "name": "expire-tabs",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "A simple browser (Chrome & Firefox) that closes your tabs after some time. The time taken into account is the time since the tab was last opened / focused.",
     "main": "src/background/main.js",
     "scripts": {
