@@ -32,7 +32,7 @@ Clicking the extension icon opens the settings popup where you can configure:
 
 ### ⌨️ Shortcuts
 
--   **Toggle Protection**: `Alt+Shift+P` (default) - Toggle protection for the current tab.
+-   **Toggle Protection**: `Alt+Shift+P` (default) - Toggle protection for the current tab. When toggled, a toast notification appears on the page showing "Protected 🔒" (green) or "Unprotected ⏳" (yellow).
 -   **Open Popup**: `Alt+Shift+A` (default) - Open the extension popup.
 -   **Open History**: `Alt+Shift+H` (default) - Open the history (options) page.
 -   **Customize**: You can change these shortcuts in your browser's extension shortcuts settings (`chrome://extensions/shortcuts`).
