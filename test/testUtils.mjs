@@ -239,7 +239,7 @@ export const waitForFunction = async (page, fn, args = [], timeout = 5000) => {
     while (Date.now() - start < timeout) {
         const result = await page.evaluate(fn, ...args);
         if (result) return;
-        await sleep(100);
+        await sleep(25);
     }
     throw new Error("Timeout waiting for function");
 };
