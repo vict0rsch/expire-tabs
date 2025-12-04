@@ -292,6 +292,25 @@
     }
 
     /**
+     * Checks if a URL supports content script injection.
+     * Content scripts cannot be injected into chrome://, about:, or extension pages.
+     * @param {string} url - The URL to check
+     * @returns {boolean} True if content scripts can be injected
+     */
+    function canInjectContentScript(url) {
+        if (!url) return false;
+        const urlLower = url.toLowerCase();
+        return (
+            !urlLower.startsWith("chrome://") &&
+            !urlLower.startsWith("chrome-extension://") &&
+            !urlLower.startsWith("moz-extension://") &&
+            !urlLower.startsWith("about:") &&
+            !urlLower.startsWith("edge://") &&
+            !urlLower.startsWith("opera://")
+        );
+    }
+
+    /**
      * Handles keyboard commands.
      * @param {string} command
      * @returns {Promise<void>}
@@ -304,10 +323,24 @@
             });
             if (tab) {
                 const isProtected = await getTabProtection(tab.id);
-                await setTabProtection(tab.id, !isProtected);
+                const newProtectedStatus = !isProtected;
+                await setTabProtection(tab.id, newProtectedStatus);
                 // Badge update is handled by storage listener in main.js or we can call it here explicitly
                 // Ideally, main.js listener handles it, but calling it here gives immediate feedback if listener is slow/detached
                 // For now, reliance on storage listener is fine as it preserves architecture
+
+                // Notify content script to show toast notification
+                // Only attempt if the tab URL supports content scripts
+                if (canInjectContentScript(tab.url)) {
+                    try {
+                        await chrome.tabs.sendMessage(tab.id, {
+                            type: "protection-status",
+                            isProtected: newProtectedStatus,
+                        });
+                    } catch (err) {
+                        // Content script might not be ready, silently fail
+                    }
+                }
             }
         } else if (command === "open-history") {
             chrome.runtime.openOptionsPage();
