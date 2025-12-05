@@ -311,6 +311,49 @@
     }
 
     /**
+     * Sends a message to a content script with retry logic.
+     * Retries if the content script isn't ready yet (common with document_idle timing).
+     * @param {number} tabId - The tab ID to send the message to
+     * @param {Object} message - The message to send
+     * @param {number} maxRetries - Maximum number of retry attempts (default: 3)
+     * @param {number} retryDelay - Delay between retries in ms (default: 200)
+     * @returns {Promise<void>}
+     */
+    async function sendMessageWithRetry(
+        tabId,
+        message,
+        maxRetries = 3,
+        retryDelay = 200
+    ) {
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+            try {
+                await chrome.tabs.sendMessage(tabId, message);
+                return; // Success
+            } catch (err) {
+                const isLastAttempt = attempt === maxRetries;
+                const isConnectionError =
+                    err.message?.includes("Could not establish connection") ||
+                    err.message?.includes("Receiving end does not exist");
+
+                if (isLastAttempt || !isConnectionError) {
+                    // Only log if it's the last attempt or a non-connection error
+                    // Connection errors on early attempts are expected if content script isn't ready
+                    if (isLastAttempt) {
+                        console.error(
+                            "Failed to send message to content script after retries:",
+                            err
+                        );
+                    }
+                    return; // Give up
+                }
+
+                // Wait before retrying
+                await new Promise((resolve) => setTimeout(resolve, retryDelay));
+            }
+        }
+    }
+
+    /**
      * Handles keyboard commands.
      * @param {string} command
      * @returns {Promise<void>}
@@ -330,17 +373,15 @@
                 // For now, reliance on storage listener is fine as it preserves architecture
 
                 // Notify content script to show toast notification
+                // The content script will display a Bootstrap toast showing "Protected 🔒" or "Unprotected ⏳"
                 // Only attempt if the tab URL supports content scripts
                 if (canInjectContentScript(tab.url)) {
-                    try {
-                        await chrome.tabs.sendMessage(tab.id, {
-                            type: "protection-status",
-                            isProtected: newProtectedStatus,
-                        });
-                    } catch (err) {
-                        // Content script might not be ready, silently fail
-                    }
+                    await sendMessageWithRetry(tab.id, {
+                        type: "protection-status",
+                        isProtected: newProtectedStatus,
+                    });
                 }
+                // Silently skip for pages that don't support content scripts (chrome://, about:, etc.)
             }
         } else if (command === "open-history") {
             chrome.runtime.openOptionsPage();
