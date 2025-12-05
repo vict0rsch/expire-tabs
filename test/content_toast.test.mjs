@@ -73,7 +73,7 @@ describe("Content Script Toast", function () {
                 );
             },
             [],
-            3000
+            2000
         );
 
         const containerStyles = await page.evaluate(() => {
@@ -109,7 +109,7 @@ describe("Content Script Toast", function () {
                 );
             },
             [],
-            3000
+            2000
         );
 
         // Get tab ID using monitor page (has chrome API access)
@@ -134,7 +134,7 @@ describe("Content Script Toast", function () {
                 });
             } catch (err) {
                 // Content script might not be ready yet, retry after a delay
-                await delay(100);
+                await delay(50);
                 await chrome.tabs.sendMessage(tabId, {
                     type: "protection-status",
                     isProtected: true,
@@ -158,7 +158,7 @@ describe("Content Script Toast", function () {
                 return false;
             },
             [],
-            2000
+            1500
         );
 
         const { toastExists, hasCorrectStyle } = await page.evaluate(() => {
@@ -208,7 +208,7 @@ describe("Content Script Toast", function () {
                 );
             },
             [],
-            3000
+            2000
         );
 
         // Get tab ID using monitor page
@@ -232,7 +232,7 @@ describe("Content Script Toast", function () {
                 });
             } catch (err) {
                 // Content script might not be ready yet, retry after a delay
-                await delay(100);
+                await delay(50);
                 await chrome.tabs.sendMessage(tabId, {
                     type: "protection-status",
                     isProtected: false,
@@ -256,7 +256,7 @@ describe("Content Script Toast", function () {
                 return false;
             },
             [],
-            2000
+            1500
         );
 
         const { toastExists, hasCorrectStyle } = await page.evaluate(() => {
@@ -334,7 +334,7 @@ describe("Content Script Toast", function () {
                     break;
                 } catch (err) {
                     if (attempt === 3) break;
-                    await delay(100);
+                    await delay(50);
                 }
             }
         }, tabId);
@@ -349,7 +349,7 @@ describe("Content Script Toast", function () {
                 );
             },
             [],
-            2000
+            1500
         );
 
         const toastExists = await page.evaluate(() => {

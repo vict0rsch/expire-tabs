@@ -129,7 +129,7 @@ describe("Expire Tabs Extension E2E", function () {
                 return !firstItem || firstItem.dataset.id !== deletedId;
             },
             [firstItemId],
-            5000
+            3000
         );
 
         const itemsAfter = await page.$$("#history-list li");
