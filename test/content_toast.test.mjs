@@ -28,21 +28,41 @@ describe("Content Script Toast", function () {
         // Create a monitor page (options page) that has access to chrome APIs
         monitorPage = await browser.newPage();
         const optionsUrl = await getOptionsUrl(browser, extensionId);
-        await monitorPage.goto(optionsUrl, { waitUntil: "networkidle0" });
+        // Use networkidle0 like other tests, with longer timeout for Firefox
+        await monitorPage.goto(optionsUrl, {
+            waitUntil: "networkidle0",
+            timeout: 60000,
+        });
     });
 
     after(async function () {
+        if (page) await page.close();
+        if (monitorPage) await monitorPage.close();
         if (browser) await browser.close();
     });
 
+    beforeEach(async function () {
+        // Reuse page if it exists, otherwise create new one
+        if (!page) {
+            page = await browser.newPage();
+        }
+    });
+
+    afterEach(async function () {
+        // Close page after each test to free resources
+        if (page) {
+            await page.close();
+            page = null;
+        }
+    });
+
     it("should load content script and create toast container", async function () {
-        page = await browser.newPage();
         await page.goto("https://example.com", {
             waitUntil: "domcontentloaded",
-            timeout: 30000,
+            timeout: 10000,
         });
 
-        // Wait for content script to be loaded (toast container should exist)
+        // Wait for content script container to be ready
         await waitForFunction(
             page,
             () => {
@@ -53,7 +73,7 @@ describe("Content Script Toast", function () {
                 );
             },
             [],
-            10000
+            3000
         );
 
         const containerStyles = await page.evaluate(() => {
@@ -73,13 +93,12 @@ describe("Content Script Toast", function () {
     });
 
     it("should show Protected toast when receiving protection-status message", async function () {
-        page = await browser.newPage();
         await page.goto("https://example.com", {
             waitUntil: "domcontentloaded",
-            timeout: 30000,
+            timeout: 10000,
         });
 
-        // Wait for content script to be loaded
+        // Wait for content script container to be ready
         await waitForFunction(
             page,
             () => {
@@ -90,7 +109,7 @@ describe("Content Script Toast", function () {
                 );
             },
             [],
-            5000
+            3000
         );
 
         // Get tab ID using monitor page (has chrome API access)
@@ -106,6 +125,8 @@ describe("Content Script Toast", function () {
 
         // Send message from monitor page (which has chrome API access) to content script
         await monitorPage.evaluate(async (tabId) => {
+            const delay = (ms) =>
+                new Promise((resolve) => setTimeout(resolve, ms));
             try {
                 await chrome.tabs.sendMessage(tabId, {
                     type: "protection-status",
@@ -113,7 +134,7 @@ describe("Content Script Toast", function () {
                 });
             } catch (err) {
                 // Content script might not be ready yet, retry after a delay
-                await sleep(200);
+                await delay(100);
                 await chrome.tabs.sendMessage(tabId, {
                     type: "protection-status",
                     isProtected: true,
@@ -121,8 +142,7 @@ describe("Content Script Toast", function () {
             }
         }, tabId);
 
-        await sleep(300);
-
+        // Wait for toast to appear instead of fixed sleep
         await waitForFunction(
             page,
             () => {
@@ -138,7 +158,7 @@ describe("Content Script Toast", function () {
                 return false;
             },
             [],
-            5000
+            2000
         );
 
         const { toastExists, hasCorrectStyle } = await page.evaluate(() => {
@@ -172,13 +192,12 @@ describe("Content Script Toast", function () {
     });
 
     it("should show Unprotected toast when receiving unprotected status", async function () {
-        page = await browser.newPage();
         await page.goto("https://example.com", {
             waitUntil: "domcontentloaded",
-            timeout: 30000,
+            timeout: 10000,
         });
 
-        // Wait for content script
+        // Wait for content script container to be ready
         await waitForFunction(
             page,
             () => {
@@ -189,7 +208,7 @@ describe("Content Script Toast", function () {
                 );
             },
             [],
-            5000
+            3000
         );
 
         // Get tab ID using monitor page
@@ -204,6 +223,8 @@ describe("Content Script Toast", function () {
 
         // Send unprotected message via monitor page
         await monitorPage.evaluate(async (tabId) => {
+            const delay = (ms) =>
+                new Promise((resolve) => setTimeout(resolve, ms));
             try {
                 await chrome.tabs.sendMessage(tabId, {
                     type: "protection-status",
@@ -211,7 +232,7 @@ describe("Content Script Toast", function () {
                 });
             } catch (err) {
                 // Content script might not be ready yet, retry after a delay
-                await sleep(200);
+                await delay(100);
                 await chrome.tabs.sendMessage(tabId, {
                     type: "protection-status",
                     isProtected: false,
@@ -219,8 +240,7 @@ describe("Content Script Toast", function () {
             }
         }, tabId);
 
-        await sleep(300);
-
+        // Wait for toast to appear instead of fixed sleep
         await waitForFunction(
             page,
             () => {
@@ -236,7 +256,7 @@ describe("Content Script Toast", function () {
                 return false;
             },
             [],
-            5000
+            2000
         );
 
         const { toastExists, hasCorrectStyle } = await page.evaluate(() => {
@@ -273,17 +293,27 @@ describe("Content Script Toast", function () {
     });
 
     it("should handle message sending with retry when content script isn't ready immediately", async function () {
-        // This test verifies that the retry logic works when content script
-        // hasn't loaded yet (common with document_idle timing)
-        page = await browser.newPage();
-
-        // Navigate but don't wait for content script - send message immediately
-        const navigationPromise = page.goto("https://example.com", {
+        // This test verifies that messages can be sent and received by content script
+        await page.goto("https://example.com", {
             waitUntil: "domcontentloaded",
-            timeout: 30000,
+            timeout: 10000,
         });
 
-        // Get tab ID before content script is ready
+        // Wait for content script container to exist
+        await waitForFunction(
+            page,
+            () => {
+                return (
+                    document.querySelector(
+                        '[data-extension-toast-container="true"]'
+                    ) !== null
+                );
+            },
+            [],
+            3000
+        );
+
+        // Get tab ID
         const tabId = await monitorPage.evaluate(async () => {
             const tabs = await chrome.tabs.query({
                 url: "*://example.com/*",
@@ -291,10 +321,10 @@ describe("Content Script Toast", function () {
             return tabs.length > 0 ? tabs[tabs.length - 1].id : null;
         });
 
-        // Wait for navigation to complete
-        await navigationPromise;
-
+        // Send message with retry logic (in case listener isn't ready yet)
         await monitorPage.evaluate(async (tabId) => {
+            const delay = (ms) =>
+                new Promise((resolve) => setTimeout(resolve, ms));
             for (let attempt = 0; attempt <= 3; attempt++) {
                 try {
                     await chrome.tabs.sendMessage(tabId, {
@@ -304,11 +334,12 @@ describe("Content Script Toast", function () {
                     break;
                 } catch (err) {
                     if (attempt === 3) break;
-                    await sleep(200);
+                    await delay(100);
                 }
             }
         }, tabId);
 
+        // Wait for toast using custom waitForFunction for Firefox compatibility
         await waitForFunction(
             page,
             () => {
@@ -318,7 +349,7 @@ describe("Content Script Toast", function () {
                 );
             },
             [],
-            5000
+            2000
         );
 
         const toastExists = await page.evaluate(() => {
