@@ -87,7 +87,6 @@ describe("Options Page New Features", function () {
         await seedStorage(page, { expiredTabs: tabs });
 
         await reloadPage(page);
-        await sleep(500);
 
         // Wait for list to render
         await page.waitForSelector("#history-list li");
