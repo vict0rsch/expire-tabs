@@ -6,12 +6,12 @@
     "scripts": {
         "build": "rollup -c rollup.config.mjs",
         "watch": "rollup -c rollup.config.mjs -w",
-        "pretest": "npm run build",
+        "pretest": "bun run build",
         "test": "mocha test/**/*.mjs",
-        "pretest:firefox": "npm run build",
+        "pretest:firefox": "bun run build",
         "test:firefox": "browser=firefox mocha test/**/*.mjs",
-        "pretest:glob": "npm run build",
-        "test:glob": "npx mocha"
+        "pretest:glob": "bun run build",
+        "test:glob": "bunx mocha"
     },
     "repository": {
         "type": "git",

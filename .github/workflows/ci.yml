@@ -13,25 +13,24 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@v4
 
-            - name: Setup Node.js
-              uses: actions/setup-node@v4
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
               with:
-                  node-version: "20"
-                  cache: "npm"
+                  bun-version: latest
 
             - name: Cache node_modules
               id: cache-node-modules
               uses: actions/cache@v4
               with:
                   path: node_modules
-                  key: ${{ runner.os }}-node_modules-${{ hashFiles('package-lock.json') }}
+                  key: ${{ runner.os }}-bun-node_modules-${{ hashFiles('bun.lock') }}
 
             - name: Install dependencies
               if: steps.cache-node-modules.outputs.cache-hit != 'true'
-              run: npm ci
+              run: bun install
 
             - name: Install Puppeteer Browsers
-              run: npx puppeteer browsers install chrome
+              run: bunx puppeteer browsers install chrome
 
     build:
         needs: install
@@ -40,24 +39,24 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@v4
 
-            - name: Setup Node.js
-              uses: actions/setup-node@v4
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
               with:
-                  node-version: "20"
+                  bun-version: latest
 
             - name: Restore node_modules
               id: cache-node-modules
               uses: actions/cache@v4
               with:
                   path: node_modules
-                  key: ${{ runner.os }}-node_modules-${{ hashFiles('package-lock.json') }}
+                  key: ${{ runner.os }}-bun-node_modules-${{ hashFiles('bun.lock') }}
 
             - name: Install dependencies
               if: steps.cache-node-modules.outputs.cache-hit != 'true'
-              run: npm ci
+              run: bun install
 
             - name: Build
-              run: npm run build
+              run: bun run build
 
     test-chrome:
         needs: build
@@ -66,27 +65,27 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@v4
 
-            - name: Setup Node.js
-              uses: actions/setup-node@v4
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
               with:
-                  node-version: "20"
+                  bun-version: latest
 
             - name: Restore node_modules
               id: cache-node-modules
               uses: actions/cache@v4
               with:
                   path: node_modules
-                  key: ${{ runner.os }}-node_modules-${{ hashFiles('package-lock.json') }}
+                  key: ${{ runner.os }}-bun-node_modules-${{ hashFiles('bun.lock') }}
 
             - name: Install dependencies
               if: steps.cache-node-modules.outputs.cache-hit != 'true'
-              run: npm ci
+              run: bun install
 
             - name: Install Puppeteer Browsers
-              run: npx puppeteer browsers install chrome
+              run: bunx puppeteer browsers install chrome
 
             - name: Test
-              run: npm test
+              run: bun run test
 
     test-firefox:
         needs: build
@@ -95,24 +94,24 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@v4
 
-            - name: Setup Node.js
-              uses: actions/setup-node@v4
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
               with:
-                  node-version: "20"
+                  bun-version: latest
 
             - name: Restore node_modules
               id: cache-node-modules
               uses: actions/cache@v4
               with:
                   path: node_modules
-                  key: ${{ runner.os }}-node_modules-${{ hashFiles('package-lock.json') }}
+                  key: ${{ runner.os }}-bun-node_modules-${{ hashFiles('bun.lock') }}
 
             - name: Install dependencies
               if: steps.cache-node-modules.outputs.cache-hit != 'true'
-              run: npm ci
+              run: bun install
 
             - name: Install Puppeteer Browsers
-              run: npx puppeteer browsers install firefox
+              run: bunx puppeteer browsers install firefox
 
             - name: Test
-              run: browser=firefox npm test
+              run: bun run test:firefox

@@ -1,0 +1,21 @@
+# Bun configuration file
+# See https://bun.sh/docs/cli/bunfig
+
+# Install configuration
+[install]
+# Use npm registry (default)
+registry = "https://registry.npmjs.org/"
+# Auto-install peer dependencies
+peer = true
+# Don't save exact versions (use ^)
+exact = false
+
+# Test configuration
+[test]
+# Timeout for tests (in milliseconds)
+timeout = 60000
+
+# Run configuration
+[run]
+# Bun's run mode configuration
+
