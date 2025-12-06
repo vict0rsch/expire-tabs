@@ -58,11 +58,19 @@ This project supports both Chrome and Firefox. It is mainly vibe-coded because I
 
 ### Install from source
 
+This project uses [Bun](https://bun.sh) as its runtime and package manager for faster performance.
+
+First, install Bun (if you haven't already):
+```bash
+curl -fsSL https://bun.sh/install | bash
+```
+
+Then:
 ```
 git clone https://github.com/vict0rsch/expire-tabs.git
 cd expire-tabs
-npm install
-npm run build
+bun install
+bun run build
 ```
 
 Or download the latest release zip file from the [releases page](https://github.com/vict0rsch/expire-tabs/releases).
@@ -80,7 +88,7 @@ Then go to `about:debugging#/runtime/this-firefox` and click on "Load temporary 
 To build the extension for both Chrome and Firefox:
 
 ```bash
-npm run build
+bun run build
 ```
 
 Using Rollup, this will:
@@ -93,7 +101,7 @@ Using Rollup, this will:
 To start the development server and watch for changes (including HTML/CSS):
 
 ```bash
-npm run watch # builds when src files or manifest change
+bun run watch # builds when src files or manifest change
 ```
 
 ### Testing
@@ -101,29 +109,29 @@ npm run watch # builds when src files or manifest change
 Run unit and E2E tests with:
 
 ```bash
-# `npm run build` is run automatically before testing
-npm test # all tests
-npm run test:glob test/storage.test.mjs # specific test
-npm run test:glob test/*_*.mjs # multiple specific tests
+# `bun run build` is run automatically before testing
+bun test # all tests
+bun run test:glob test/storage.test.mjs # specific test
+bun run test:glob test/*_*.mjs # multiple specific tests
 ```
 
 Want to see the tests in action? use the `headless` environment variable:
 
 ```bash
-headless=0 npm test
+headless=0 bun test
 ```
 
 Tests defaults to Chrome. To test Firefox, run:
 
 ```bash
-npm run test:firefox
+bun run test:firefox
 ```
 
 or set the `browser` environment variable to `firefox`:
 
 ```bash
-browser=firefox npm test
-browser=firefox npm run test:glob test/*_*.mjs # specific test
+browser=firefox bun test
+browser=firefox bun run test:glob test/*_*.mjs # specific test
 ```
 
 Writing tests for Firefox is a bit more challenging due to the differences in the browser APIs. See [test/firefox.md](test/firefox.md) for more details.
