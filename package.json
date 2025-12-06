@@ -5,6 +5,8 @@
     "main": "src/background/main.js",
     "scripts": {
         "build": "rollup -c rollup.config.mjs",
+        "prebuild:safari": "npm run build",
+        "build:safari": "./scripts/build-safari.sh",
         "watch": "rollup -c rollup.config.mjs -w",
         "pretest": "npm run build",
         "test": "mocha test/**/*.mjs",
