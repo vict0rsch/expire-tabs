@@ -114,4 +114,4 @@ jobs:
               run: bunx puppeteer browsers install firefox
 
             - name: Test
-              run: bun run test:firefox
+              run: browser=firefox bun run test
