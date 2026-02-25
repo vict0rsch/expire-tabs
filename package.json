@@ -10,6 +10,8 @@
         "test": "mocha test/**/*.mjs",
         "pretest:firefox": "bun run build",
         "test:firefox": "browser=firefox mocha test/**/*.mjs",
+        "pretest:both": "bun run build",
+        "test:both": "concurrently 'bunx mocha test/**/*.mjs' 'browser=firefox bunx mocha test/**/*.mjs'",
         "pretest:glob": "bun run build",
         "test:glob": "bunx mocha"
     },
@@ -36,6 +38,7 @@
         "preact": "^10.27.2",
         "puppeteer": "^24.31.0",
         "rollup": "^4.53.3",
-        "sinon": "^21.0.0"
+        "sinon": "^21.0.0",
+        "luxon": "^3.7.2"
     }
 }

@@ -6,77 +6,134 @@ import {
     getTabProtection,
     setTabProtection,
 } from "../utils/storage.js";
-import { unitToMs } from "../utils/config.js";
+import { msToDuration } from "../utils/config.js";
 /**
  * Checks all tabs and closes them if they have expired.
  * Fetches storage data in bulk to optimize performance.
  * @returns {Promise<void>}
  */
 export async function checkTabs() {
-    const { timeout, unit } = await getSettings();
+    const { expired, orphan } = await getTabsStatus();
+    if (expired.length > 0) {
+        console.log("To expire tabs:", expired);
+    }
+    if (orphan.length > 0) {
+        console.log("Orphan tabs:", orphan);
+    }
+    for (const tab of expired) {
+        await closeTab(tab);
+    }
+    for (const tab of orphan) {
+        await chrome.storage.local.set({ [getTabKey(tab.id)]: Date.now() });
+    }
+}
 
-    const timeoutMs = unitToMs(unit) * timeout;
+/**
+ * Displays the status of all tabs.
+ * @returns {Promise<void>}
+ */
+export async function displayTabsStatus() {
+    const storedData = await chrome.storage.local.get(null);
+    const tabsStatus = await getTabsStatus();
+    const { timeoutMs } = await getSettings();
+    const headers = {
+        orphan: "🔴 Orphan tabs",
+        audible: "🎤 Audible tabs",
+        pinned: "📍 Pinned tabs",
+        protected: "🔒 Protected tabs",
+        expired: "🟡 Tabs to expire",
+        active: "🎯 Active tabs",
+        mayExpire: "🔄 Tabs to expire next",
+    };
+    console.log("Tabs status at", new Date().toISOString());
+    for (const [key, value] of Object.entries(headers)) {
+        const tabs = tabsStatus[key];
+        if (tabs?.length) {
+            console.log(`  -- ${value}`);
+            const displays = tabs.map((tab) => {
+                let display = {
+                    title: tab.title,
+                    url: tab.url,
+                    id: tab.id,
+                };
+                const tabKey = getTabKey(tab.id);
+                const recordedAt = storedData[tabKey];
+                if (recordedAt) {
+                    const expireAtMs = recordedAt + timeoutMs;
+                    display.expireAt = new Date(expireAtMs).toLocaleString();
+                    display.timeLeft = msToDuration(expireAtMs - Date.now());
+                }
+                return display;
+            });
+            if (key === "mayExpire") {
+                displays.sort(
+                    (a, b) =>
+                        storedData[getTabKey(a.id)] -
+                        storedData[getTabKey(b.id)]
+                );
+            }
+            console.log(displays);
+        }
+    }
+    console.log("--------------------------------");
+}
+
+/**
+ * Gets the status of all tabs, categorized by priority.
+ * Priority order: pinned > audible > active > protected > expired > mayExpire > orphan.
+ * @returns {Promise<Object>}
+ * @property {chrome.tabs.Tab[]} pinned - pinned tabs
+ * @property {chrome.tabs.Tab[]} audible - playing audio
+ * @property {chrome.tabs.Tab[]} active - currently active in their window
+ * @property {chrome.tabs.Tab[]} protected - user-protected tabs
+ * @property {chrome.tabs.Tab[]} expired - past timeout, should be closed
+ * @property {chrome.tabs.Tab[]} mayExpire - tracked but not yet expired
+ * @property {chrome.tabs.Tab[]} orphan - not listed in storage, need timestamp reset
+ */
+export async function getTabsStatus() {
+    const { timeoutMs } = await getSettings();
     const now = Date.now();
-
     const tabs = await chrome.tabs.query({});
-
-    // Optimize: Fetch all storage data at once
-    const keysToFetch = [];
-    const tabsToCheck = [];
-
+    const storedData = await chrome.storage.local.get(null);
+    const tabsStatus = {
+        expired: [], // expired, to close
+        audible: [], // playing audio, to ignore
+        pinned: [], // pinned, to ignore
+        protected: [], // protected, to ignore
+        active: [], // currently active, to ignore
+        mayExpire: [], // may become expired but not yet
+        orphan: [], // can be timed out but not listed in storage, to reset timestamp
+    };
     for (const tab of tabs) {
-        if (tab.pinned) continue;
-        if (tab.audible) continue; // Don't close if playing audio
-
-        const key = getTabKey(tab.id);
-        const protectedKey = getProtectedKey(tab.id);
-
-        keysToFetch.push(key, protectedKey);
-        tabsToCheck.push({ tab, key, protectedKey });
-    }
-
-    if (keysToFetch.length === 0) return;
-
-    const storedData = await chrome.storage.local.get(keysToFetch);
-    const updates = {};
-
-    for (const { tab, key, protectedKey } of tabsToCheck) {
-        // Check if protected
-        if (storedData[protectedKey]) {
-            continue; // Tab is protected, skip
-        }
-
-        if (tab.active) {
-            // It's active now, update timestamp
-            updates[key] = now;
-            continue;
-        }
-
-        let lastActive = storedData[key];
-
-        if (!lastActive) {
-            // Start tracking from now
-            lastActive = now;
-            updates[key] = now;
-        }
-
-        if (now - lastActive > timeoutMs) {
-            // Expired
-            await closeTab(tab);
+        if (tab.pinned) {
+            tabsStatus.pinned.push(tab);
+        } else if (tab.audible) {
+            tabsStatus.audible.push(tab);
+        } else if (tab.active) {
+            tabsStatus.active.push(tab);
+        } else if (storedData[getProtectedKey(tab.id)]) {
+            tabsStatus.protected.push(tab);
+        } else if (now - storedData[getTabKey(tab.id)] > timeoutMs) {
+            tabsStatus.expired.push(tab);
+        } else if (now - storedData[getTabKey(tab.id)] <= timeoutMs) {
+            tabsStatus.mayExpire.push(tab);
+        } else {
+            tabsStatus.orphan.push(tab);
         }
     }
-
-    if (Object.keys(updates).length > 0) {
-        await chrome.storage.local.set(updates);
-    }
+    return tabsStatus;
 }
 
 /**
  * Closes a specific tab and adds it to history.
  * @param {chrome.tabs.Tab} tab
+ * @param {boolean} [log=true] - Whether to log the tab closure to the console.
  * @returns {Promise<void>}
  */
-export async function closeTab(tab) {
+export async function closeTab(tab, log = true) {
+    if (log) {
+        console.log("Closing tab:", tab.id, tab.title, tab.url);
+    }
     try {
         // Add to history first
         await addExpiredTab({
@@ -114,9 +171,11 @@ export async function updateBadge(tabId) {
 
 /**
  * Cleans up storage by removing data for tabs that no longer exist.
+ * @param {Object} [options]
+ * @param {boolean} [options.shouldDelete=false] - Whether to actually remove orphaned keys from storage.
  * @returns {Promise<void>}
  */
-export async function cleanUpStorage() {
+export async function cleanUpStorage({ shouldDelete = false } = {}) {
     const allData = await chrome.storage.local.get(null);
     const allKeys = Object.keys(allData);
     const tabs = await chrome.tabs.query({});
@@ -138,7 +197,13 @@ export async function cleanUpStorage() {
     }
 
     if (keysToRemove.length > 0) {
-        await chrome.storage.local.remove(keysToRemove);
+        console.log("Orphaned keys:", keysToRemove);
+        console.log(
+            "This may be due to workspace switching, the tab may be open but unreachable to the extension"
+        );
+        if (shouldDelete) {
+            await chrome.storage.local.remove(keysToRemove);
+        }
     }
 }
 

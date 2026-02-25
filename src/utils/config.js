@@ -1,3 +1,5 @@
+import { Duration } from "luxon";
+
 const defaultSettings = {
     timeout: 12,
     unit: "hours",
@@ -31,4 +33,21 @@ export const unitToMs = (unit) => {
  */
 export const getDefaults = () => {
     return { ...defaultSettings };
+};
+
+/**
+ * Formats a duration in milliseconds to a human-readable string.
+ * @param {number} ms - Duration in milliseconds.
+ * @returns {string} Formatted duration string.
+ */
+export const msToDuration = (ms) => {
+    const daysMs = 24 * 60 * 60 * 1000;
+    const hoursMs = 60 * 60 * 1000;
+    return ms > 2 * daysMs
+        ? Duration.fromMillis(ms).toFormat("d 'days' hh:mm:ss")
+        : ms > daysMs
+        ? Duration.fromMillis(ms).toFormat("d 'day' hh:mm:ss")
+        : ms > hoursMs
+        ? Duration.fromMillis(ms).toFormat("h 'hours' mm:ss")
+        : Duration.fromMillis(ms).toFormat("mm:ss");
 };

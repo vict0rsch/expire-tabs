@@ -18,4 +18,3 @@ timeout = 60000
 # Run configuration
 [run]
 # Bun's run mode configuration
-
