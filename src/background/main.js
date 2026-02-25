@@ -4,19 +4,32 @@ import {
     updateBadge,
     cleanUpStorage,
     handleCommand,
+    displayTabsStatus,
 } from "./logic.js";
 
 const ALARM_NAME = "check_tabs";
+const ALARM_INTERVAL_IN_MINUTES = 1 / 6;
+
+const mainRoutine = async () => {
+    await cleanUpStorage();
+    await displayTabsStatus();
+    await checkTabs();
+};
 
 // Setup alarm on install/startup
 chrome.runtime.onInstalled.addListener(async () => {
-    chrome.alarms.create(ALARM_NAME, { periodInMinutes: 1 });
-    await cleanUpStorage();
+    chrome.alarms.create(ALARM_NAME, {
+        periodInMinutes: ALARM_INTERVAL_IN_MINUTES,
+    });
+    await mainRoutine();
 });
 
 chrome.runtime.onStartup.addListener(async () => {
-    chrome.alarms.create(ALARM_NAME, { periodInMinutes: 1 });
-    await cleanUpStorage();
+    chrome.alarms.create(ALARM_NAME, {
+        periodInMinutes: ALARM_INTERVAL_IN_MINUTES,
+    });
+    await cleanUpStorage({ shouldDelete: true });
+    await mainRoutine();
 });
 
 // When a tab is activated, update its last active time
@@ -62,6 +75,6 @@ chrome.storage.onChanged.addListener((changes, area) => {
 // Check tabs
 chrome.alarms.onAlarm.addListener(async (alarm) => {
     if (alarm.name === ALARM_NAME) {
-        await checkTabs();
+        await mainRoutine();
     }
 });

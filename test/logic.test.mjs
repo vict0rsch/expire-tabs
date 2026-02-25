@@ -37,6 +37,7 @@ const defaultUnitMultiplier = unitToMs(defaults.unit);
 // Import after mocking
 import {
     checkTabs,
+    getTabsStatus,
     updateBadge,
     cleanUpStorage,
     handleCommand,
@@ -99,7 +100,7 @@ describe("Background Logic", () => {
             // checkTabs calls: chrome.storage.local.get(keysToFetch)
             // keysToFetch will be ["tab_1", "protected_1", "tab_2", "protected_2"]
             chromeMock.storage.local.get.callsFake((keys) => {
-                if (Array.isArray(keys) && keys.includes("tab_1")) {
+                if (keys === null) {
                     return Promise.resolve(storageData);
                 }
                 if (Array.isArray(keys) && keys.includes("timeout")) {
@@ -142,7 +143,7 @@ describe("Background Logic", () => {
             };
 
             chromeMock.storage.local.get.callsFake((keys) => {
-                if (Array.isArray(keys) && keys.includes("tab_1")) {
+                if (keys === null) {
                     return Promise.resolve(storageData);
                 }
                 if (Array.isArray(keys) && keys.includes("timeout")) {
@@ -182,8 +183,8 @@ describe("Background Logic", () => {
             // checkTabs filters out pinned and audible tabs before fetching storage
             const getCalls = chromeMock.storage.local.get.getCalls();
             // 1 call for settings
-            // 0 calls for tab data because list is empty after filtering
-            expect(getCalls.length).to.equal(1);
+            // 1 call for tab data
+            expect(getCalls.length).to.equal(2);
             expect(chromeMock.tabs.remove.called).to.be.false;
         });
     });
@@ -217,11 +218,9 @@ describe("Background Logic", () => {
     });
 
     describe("cleanUpStorage", () => {
-        it("should remove storage keys for non-existent tabs", async () => {
-            // Mock current tabs: only tab 1 exists
+        it("should log but not remove orphaned keys by default", async () => {
             chromeMock.tabs.query.resolves([{ id: 1 }]);
 
-            // Mock storage: contains keys for tab 1 and tab 2 (which doesn't exist)
             const storageData = {
                 tab_1: 123456,
                 protected_1: true,
@@ -234,17 +233,33 @@ describe("Background Logic", () => {
 
             await cleanUpStorage();
 
-            // Should call tabs.query
+            expect(chromeMock.tabs.query.calledOnce).to.be.true;
+            expect(chromeMock.storage.local.remove.called).to.be.false;
+        });
+
+        it("should remove orphaned keys when shouldDelete is true", async () => {
+            chromeMock.tabs.query.resolves([{ id: 1 }]);
+
+            const storageData = {
+                tab_1: 123456,
+                protected_1: true,
+                tab_2: 123456,
+                protected_2: false,
+                other_key: "value",
+            };
+            chromeMock.storage.local.get.resolves(storageData);
+            chromeMock.storage.local.remove.resolves();
+
+            await cleanUpStorage({ shouldDelete: true });
+
             expect(chromeMock.tabs.query.calledOnce).to.be.true;
 
-            // Should remove tab_2 and protected_2
             expect(chromeMock.storage.local.remove.calledOnce).to.be.true;
             const keysRemoved =
                 chromeMock.storage.local.remove.firstCall.args[0];
             expect(keysRemoved).to.include("tab_2");
             expect(keysRemoved).to.include("protected_2");
 
-            // Should NOT remove tab_1 or protected_1
             expect(keysRemoved).to.not.include("tab_1");
             expect(keysRemoved).to.not.include("protected_1");
             expect(keysRemoved).to.not.include("other_key");
@@ -316,6 +331,255 @@ describe("Background Logic", () => {
             chromeMock.tabs.query.resolves([]);
             await handleCommand("toggle-protection");
             expect(chromeMock.storage.local.get.called).to.be.false;
+        });
+    });
+
+    describe("getTabsStatus", () => {
+        it("should correctly categorize tabs based on status and priority", async () => {
+            const now = Date.now();
+            const expiredTime =
+                now - (defaults.timeout + 1) * defaultUnitMultiplier;
+            const recentTime =
+                now - (defaults.timeout - 1) * defaultUnitMultiplier;
+
+            // Create tabs with conflicting states to test priority
+            // Priority: Pinned > Audible > Active > Protected > Expired/MayExpire > Orphan
+            const tabs = [
+                // 1. Pinned (wins over everything else)
+                {
+                    id: 1,
+                    active: true,
+                    pinned: true,
+                    audible: true,
+                    title: "Pinned Tab",
+                },
+                // 2. Audible (wins over active/protected/expired)
+                {
+                    id: 2,
+                    active: true,
+                    pinned: false,
+                    audible: true,
+                    title: "Audible Tab",
+                },
+                // 3. Active (wins over protected/expired)
+                {
+                    id: 3,
+                    active: true,
+                    pinned: false,
+                    audible: false,
+                    title: "Active Tab",
+                },
+                // 4. Protected (wins over expired)
+                {
+                    id: 4,
+                    active: false,
+                    pinned: false,
+                    audible: false,
+                    title: "Protected Tab",
+                },
+                // 5. Expired (wins over mayExpire)
+                {
+                    id: 5,
+                    active: false,
+                    pinned: false,
+                    audible: false,
+                    title: "Expired Tab",
+                },
+                // 6. MayExpire (wins over orphan)
+                {
+                    id: 6,
+                    active: false,
+                    pinned: false,
+                    audible: false,
+                    title: "May Expire Tab",
+                },
+                // 7. Orphan (no storage data)
+                {
+                    id: 7,
+                    active: false,
+                    pinned: false,
+                    audible: false,
+                    title: "Orphan Tab",
+                },
+            ];
+
+            chromeMock.tabs.query.resolves(tabs);
+
+            const storageData = {
+                // Tab 1: Pinned (data irrelevant but present)
+                tab_1: expiredTime,
+                // Tab 2: Audible (data irrelevant but present)
+                tab_2: expiredTime,
+                // Tab 3: Active (data irrelevant but present)
+                tab_3: expiredTime,
+                protected_3: true,
+                // Tab 4: Protected
+                tab_4: expiredTime,
+                protected_4: true,
+                // Tab 5: Expired
+                tab_5: expiredTime,
+                // Tab 6: May Expire
+                tab_6: recentTime,
+                // Tab 7: Orphan (no data)
+            };
+
+            chromeMock.storage.local.get.callsFake((keys) => {
+                if (Array.isArray(keys) && keys.includes("timeout")) {
+                    return Promise.resolve({
+                        timeout: defaults.timeout,
+                        unit: defaults.unit,
+                    });
+                }
+                if (keys === null) {
+                    return Promise.resolve(storageData);
+                }
+                return Promise.resolve({});
+            });
+
+            const status = await getTabsStatus();
+
+            // Verify counts and IDs
+            expect(status.pinned).to.have.length(1);
+            expect(status.pinned[0].id).to.equal(1);
+
+            expect(status.audible).to.have.length(1);
+            expect(status.audible[0].id).to.equal(2);
+
+            expect(status.active).to.have.length(1);
+            expect(status.active[0].id).to.equal(3);
+
+            expect(status.protected).to.have.length(1);
+            expect(status.protected[0].id).to.equal(4);
+
+            expect(status.expired).to.have.length(1);
+            expect(status.expired[0].id).to.equal(5);
+
+            expect(status.mayExpire).to.have.length(1);
+            expect(status.mayExpire[0].id).to.equal(6);
+
+            expect(status.orphan).to.have.length(1);
+            expect(status.orphan[0].id).to.equal(7);
+        });
+
+        it("should handle exact timeout boundary", async () => {
+            const clock = sinon.useFakeTimers({
+                now: new Date().getTime(),
+                toFake: ["Date"],
+            });
+
+            try {
+                const now = Date.now();
+                const exactTimeoutTime =
+                    now - defaults.timeout * defaultUnitMultiplier;
+
+                const tabs = [
+                    {
+                        id: 1,
+                        active: false,
+                        pinned: false,
+                        audible: false,
+                        title: "Boundary Tab",
+                        url: "http://boundary.com",
+                    },
+                ];
+                chromeMock.tabs.query.resolves(tabs);
+
+                const storageData = {
+                    tab_1: exactTimeoutTime,
+                };
+
+                chromeMock.storage.local.get.callsFake((keys) => {
+                    if (Array.isArray(keys) && keys.includes("timeout")) {
+                        return Promise.resolve({
+                            timeout: defaults.timeout,
+                            unit: defaults.unit,
+                        });
+                    }
+                    if (keys === null) {
+                        return Promise.resolve(storageData);
+                    }
+                    return Promise.resolve({});
+                });
+
+                const status = await getTabsStatus();
+
+                // At exact boundary (diff == timeout), should be in mayExpire (not expired)
+                // logic: if (diff > timeout) expired; else if (diff <= timeout) mayExpire
+                expect(status.mayExpire).to.have.length(1);
+                expect(status.mayExpire[0].id).to.equal(1);
+                expect(status.expired).to.have.length(0);
+            } finally {
+                clock.restore();
+            }
+        });
+
+        it("should handle empty tabs array", async () => {
+            chromeMock.tabs.query.resolves([]);
+
+            chromeMock.storage.local.get.callsFake((keys) => {
+                if (Array.isArray(keys) && keys.includes("timeout")) {
+                    return Promise.resolve({
+                        timeout: defaults.timeout,
+                        unit: defaults.unit,
+                    });
+                }
+                if (keys === null) {
+                    return Promise.resolve({});
+                }
+                return Promise.resolve({});
+            });
+
+            const status = await getTabsStatus();
+
+            expect(status.expired).to.have.length(0);
+            expect(status.orphan).to.have.length(0);
+            expect(status.audible).to.have.length(0);
+            expect(status.pinned).to.have.length(0);
+            expect(status.protected).to.have.length(0);
+            expect(status.active).to.have.length(0);
+            expect(status.mayExpire).to.have.length(0);
+        });
+
+        it("should use custom timeout settings", async () => {
+            const customTimeout = 24;
+            const customUnit = "hours";
+            const customUnitMs = unitToMs(customUnit);
+            const now = Date.now();
+            const expiredTime = now - (customTimeout + 1) * customUnitMs;
+
+            const tabs = [
+                {
+                    id: 1,
+                    active: false,
+                    pinned: false,
+                    audible: false,
+                    title: "Custom Timeout Tab",
+                    url: "http://custom.com",
+                },
+            ];
+            chromeMock.tabs.query.resolves(tabs);
+
+            const storageData = {
+                tab_1: expiredTime,
+            };
+
+            chromeMock.storage.local.get.callsFake((keys) => {
+                if (Array.isArray(keys) && keys.includes("timeout")) {
+                    return Promise.resolve({
+                        timeout: customTimeout,
+                        unit: customUnit,
+                    });
+                }
+                if (keys === null) {
+                    return Promise.resolve(storageData);
+                }
+                return Promise.resolve({});
+            });
+
+            const status = await getTabsStatus();
+
+            expect(status.expired).to.have.length(1);
+            expect(status.expired[0].id).to.equal(1);
         });
     });
 });

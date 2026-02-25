@@ -1,4 +1,4 @@
-import { getDefaults } from "./config.js";
+import { getDefaults, unitToMs } from "./config.js";
 
 /**
  * Storage utility functions for Expire Tabs extension.
@@ -33,7 +33,18 @@ export const getSettings = async () => {
     timeout = timeout ?? defaults.timeout;
     unit = unit ?? defaults.unit;
     historyLimit = historyLimit ?? defaults.historyLimit;
-    return { timeout, unit, historyLimit };
+    const batchSize = defaults.batchSize;
+    const loadMargin = defaults.loadMargin;
+    const timeoutMs = unitToMs(unit) * timeout;
+
+    return {
+        timeout,
+        unit,
+        historyLimit,
+        batchSize,
+        loadMargin,
+        timeoutMs,
+    };
 };
 
 /**
