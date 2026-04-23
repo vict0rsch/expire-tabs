@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import sinon from "sinon";
 
-import { getDefaults, unitToMs } from "../src/utils/config.js";
+import { getDefaults, unitToMs } from "../utils/config.js";
 // Mock browser API
 const chromeMock = {
     storage: {
@@ -42,12 +42,13 @@ import {
     cleanUpStorage,
     handleCommand,
     expireAllTabs,
-} from "../src/background/logic.js";
+} from "../utils/background/logic.js";
 
 describe("Background Logic", () => {
     beforeEach(() => {
-        // Ensure global.chrome is set before each test
+        // Ensure browser globals are set before each test
         global.chrome = chromeMock;
+        global.browser = chromeMock;
         sinon.reset();
     });
 

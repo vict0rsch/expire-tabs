@@ -12,7 +12,7 @@ import {
     waitForFunction,
     reloadPage,
 } from "./testUtils.mjs";
-import { getDefaults, unitToMs } from "../src/utils/config.js";
+import { getDefaults, unitToMs } from "../utils/config.js";
 
 const defaults = getDefaults();
 const defaultUnitMultiplier = unitToMs(defaults.unit);

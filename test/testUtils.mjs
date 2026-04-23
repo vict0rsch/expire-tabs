@@ -5,11 +5,24 @@ import fs from "fs";
 import os from "os";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-export const EXTENSION_PATH = path.join(__dirname, "../src");
 export const TEST_DATA_PATH = path.join(
     __dirname,
     "expired-tabs-test-data.json"
 );
+
+const BROWSER_TO_OUTPUT_DIR = {
+    chrome: "chrome-mv3",
+    firefox: "firefox-mv2",
+};
+
+export const getExtensionPath = (browser = "chrome") => {
+    const outputDir =
+        BROWSER_TO_OUTPUT_DIR[browser] ??
+        (() => {
+            throw new Error(`Unknown browser: ${browser}`);
+        })();
+    return path.join(__dirname, "../dist", outputDir);
+};
 
 /**
  * Dedent a string. Assumes all lines are indented by the same amount.
@@ -38,7 +51,7 @@ export const launchBrowser = async ({
             `Invalid browser: ${browser}, valid browsers are: chrome, firefox`
         );
     }
-    const extensionPath = path.join(EXTENSION_PATH, "dist", browser);
+    const extensionPath = getExtensionPath(browser);
 
     let userDataDir;
     if (browser === "firefox") {
@@ -142,9 +155,12 @@ export const getFirefoxExtensionId = async (browser) => {
         waitUntil: "networkidle0",
     });
     const manifest = JSON.parse(
-        fs.readFileSync(path.join(EXTENSION_PATH, "manifest.json"), "utf-8")
+        fs.readFileSync(
+            path.join(getExtensionPath("firefox"), "manifest.json"),
+            "utf-8"
+        )
     );
-    const manifestId = manifest["firefox:browser_specific_settings"].gecko.id;
+    const manifestId = manifest.browser_specific_settings.gecko.id;
     const extensionId = await extensionPage.evaluate((manifestId) => {
         const extensionCard = [
             ...document.querySelectorAll(
@@ -169,7 +185,7 @@ export const getOptionsUrl = async (browser, extensionId) => {
     const isChrome = (await browser.version()).includes("Chrome");
     return `${
         isChrome ? "chrome" : "moz"
-    }-extension://${extensionId}/options_ui/page.html`;
+    }-extension://${extensionId}/options.html`;
 };
 
 /**
@@ -182,7 +198,7 @@ export const getPopupUrl = async (browser, extensionId) => {
     const isChrome = (await browser.version()).includes("Chrome");
     return `${
         isChrome ? "chrome" : "moz"
-    }-extension://${extensionId}/action/default_popup.html`;
+    }-extension://${extensionId}/popup.html`;
 };
 
 /**
