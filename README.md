@@ -78,11 +78,11 @@ Or download the latest release zip file from the [releases page](https://github.
 
 #### Chrome
 
-Then go to `chrome://extensions/` and enable "Developer mode". Click on "Load unpacked" and select the `manifest.json` `dist/chrome` directory.
+Then go to `chrome://extensions/` and enable "Developer mode". Click on "Load unpacked" and select the `dist/chrome-mv3` directory.
 
 #### Firefox
 
-Then go to `about:debugging#/runtime/this-firefox` and click on "Load temporary add-on". Select the `manifest.json` `dist/firefox` directory. Be careful, you will lose the data stored in the extension if you quit the browser (see [Install a personal firefox web extension permanently](https://stackoverflow.com/questions/47363481/install-a-personal-firefox-web-extension-permanently) or [How to make a temporary add-on permanent](https://support.mozilla.org/si/questions/1406851)).
+Then go to `about:debugging#/runtime/this-firefox` and click on "Load temporary add-on". Select the `dist/firefox-mv2/manifest.json` file. Be careful, you will lose the data stored in the extension if you quit the browser (see [Install a personal firefox web extension permanently](https://stackoverflow.com/questions/47363481/install-a-personal-firefox-web-extension-permanently) or [How to make a temporary add-on permanent](https://support.mozilla.org/si/questions/1406851)).
 
 ### Build
 
@@ -92,17 +92,21 @@ To build the extension for both Chrome and Firefox:
 bun run build
 ```
 
-Using Rollup, this will:
+Using [WXT](https://wxt.dev), this produces `dist/chrome-mv3/` and `dist/firefox-mv2/`.
 
-1. Compile the JS bundles.
-2. Build the full extension (`src/dist/chrome` and `src/dist/firefox`) using [Extension.js](https://extension.js.org)
-
-### Watch
-
-To start the development server and watch for changes (including HTML/CSS):
+To produce distributable zip files:
 
 ```bash
-bun run watch # builds when src files or manifest change
+bun run zip
+```
+
+### Dev (watch mode)
+
+To start a live-reloading development session:
+
+```bash
+bun run dev          # Chrome (default)
+bun run dev:firefox  # Firefox
 ```
 
 ### Testing
