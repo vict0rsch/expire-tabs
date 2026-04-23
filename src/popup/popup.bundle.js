@@ -145,6 +145,7 @@
             "historyBtn",
             "statusMsg",
             "protectToggleBtn",
+            "expireAllBtn",
             "helpIcon",
             "helpModal",
         ]) {
@@ -239,6 +240,24 @@
                 await saveSettings({ timeout, unit, historyLimit });
                 elements.statusMsg.textContent = "Settings saved.";
 
+                setTimeout(() => {
+                    elements.statusMsg.textContent = "";
+                }, 2000);
+            });
+        }
+
+        // Expire all tabs
+        if (elements.expireAllBtn) {
+            elements.expireAllBtn.addEventListener("click", async () => {
+                elements.expireAllBtn.disabled = true;
+                elements.statusMsg.classList.remove("error");
+                const response = await chrome.runtime.sendMessage({
+                    type: "expire-all",
+                });
+                const count = response?.closed ?? 0;
+                elements.statusMsg.textContent =
+                    count > 0 ? `Closed ${count} tab${count > 1 ? "s" : ""}.` : "No expirable tabs.";
+                elements.expireAllBtn.disabled = false;
                 setTimeout(() => {
                     elements.statusMsg.textContent = "";
                 }, 2000);

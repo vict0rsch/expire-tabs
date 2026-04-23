@@ -125,6 +125,19 @@ export async function getTabsStatus() {
 }
 
 /**
+ * Immediately closes all expirable tabs (not pinned, active, audible, or protected).
+ * @returns {Promise<{closed: number}>} The number of tabs that were closed.
+ */
+export async function expireAllTabs() {
+    const { expired, mayExpire, orphan } = await getTabsStatus();
+    const toClose = [...expired, ...mayExpire, ...orphan];
+    for (const tab of toClose) {
+        await closeTab(tab);
+    }
+    return { closed: toClose.length };
+}
+
+/**
  * Closes a specific tab and adds it to history.
  * @param {chrome.tabs.Tab} tab
  * @param {boolean} [log=true] - Whether to log the tab closure to the console.

@@ -41,6 +41,7 @@ import {
     updateBadge,
     cleanUpStorage,
     handleCommand,
+    expireAllTabs,
 } from "../src/background/logic.js";
 
 describe("Background Logic", () => {
@@ -331,6 +332,96 @@ describe("Background Logic", () => {
             chromeMock.tabs.query.resolves([]);
             await handleCommand("toggle-protection");
             expect(chromeMock.storage.local.get.called).to.be.false;
+        });
+    });
+
+    describe("expireAllTabs", () => {
+        it("should close all expirable tabs (expired + mayExpire + orphan)", async () => {
+            const now = Date.now();
+            const expiredTime =
+                now - (defaults.timeout + 1) * defaultUnitMultiplier;
+            const recentTime =
+                now - (defaults.timeout - 1) * defaultUnitMultiplier;
+
+            const tabs = [
+                { id: 1, active: false, pinned: true, audible: false, title: "Pinned", url: "http://pinned.com" },
+                { id: 2, active: false, pinned: false, audible: true, title: "Audible", url: "http://audible.com" },
+                { id: 3, active: true, pinned: false, audible: false, title: "Active", url: "http://active.com" },
+                { id: 4, active: false, pinned: false, audible: false, title: "Protected", url: "http://protected.com" },
+                { id: 5, active: false, pinned: false, audible: false, title: "Expired", url: "http://expired.com" },
+                { id: 6, active: false, pinned: false, audible: false, title: "MayExpire", url: "http://mayexpire.com" },
+                { id: 7, active: false, pinned: false, audible: false, title: "Orphan", url: "http://orphan.com" },
+            ];
+            chromeMock.tabs.query.resolves(tabs);
+            chromeMock.tabs.remove.resolves();
+
+            const storageData = {
+                tab_1: expiredTime,
+                tab_2: expiredTime,
+                tab_3: expiredTime,
+                protected_4: true,
+                tab_4: expiredTime,
+                tab_5: expiredTime,
+                tab_6: recentTime,
+            };
+
+            chromeMock.storage.local.get.callsFake((keys) => {
+                if (keys === null) return Promise.resolve(storageData);
+                if (Array.isArray(keys) && keys.includes("timeout"))
+                    return Promise.resolve({ timeout: defaults.timeout, unit: defaults.unit });
+                if (Array.isArray(keys) && keys.includes("expiredTabs"))
+                    return Promise.resolve({ expiredTabs: [] });
+                return Promise.resolve({});
+            });
+            chromeMock.storage.local.set.resolves();
+
+            const result = await expireAllTabs();
+
+            expect(result.closed).to.equal(3);
+            expect(chromeMock.tabs.remove.calledWith(5)).to.be.true;
+            expect(chromeMock.tabs.remove.calledWith(6)).to.be.true;
+            expect(chromeMock.tabs.remove.calledWith(7)).to.be.true;
+
+            expect(chromeMock.tabs.remove.calledWith(1)).to.be.false;
+            expect(chromeMock.tabs.remove.calledWith(2)).to.be.false;
+            expect(chromeMock.tabs.remove.calledWith(3)).to.be.false;
+            expect(chromeMock.tabs.remove.calledWith(4)).to.be.false;
+        });
+
+        it("should return 0 when no expirable tabs exist", async () => {
+            const tabs = [
+                { id: 1, active: true, pinned: false, audible: false, title: "Active", url: "http://active.com" },
+                { id: 2, active: false, pinned: true, audible: false, title: "Pinned", url: "http://pinned.com" },
+            ];
+            chromeMock.tabs.query.resolves(tabs);
+
+            chromeMock.storage.local.get.callsFake((keys) => {
+                if (keys === null) return Promise.resolve({});
+                if (Array.isArray(keys) && keys.includes("timeout"))
+                    return Promise.resolve({ timeout: defaults.timeout, unit: defaults.unit });
+                return Promise.resolve({});
+            });
+
+            const result = await expireAllTabs();
+
+            expect(result.closed).to.equal(0);
+            expect(chromeMock.tabs.remove.called).to.be.false;
+        });
+
+        it("should handle empty tabs array", async () => {
+            chromeMock.tabs.query.resolves([]);
+
+            chromeMock.storage.local.get.callsFake((keys) => {
+                if (keys === null) return Promise.resolve({});
+                if (Array.isArray(keys) && keys.includes("timeout"))
+                    return Promise.resolve({ timeout: defaults.timeout, unit: defaults.unit });
+                return Promise.resolve({});
+            });
+
+            const result = await expireAllTabs();
+
+            expect(result.closed).to.equal(0);
+            expect(chromeMock.tabs.remove.called).to.be.false;
         });
     });
 

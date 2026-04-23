@@ -57,9 +57,20 @@ body {
     flex: 1;
 }
 
+#expireAllBtn {
+    height: 35px;
+    margin: 32px auto 0 auto;
+    width: 75%;
+    background-color: #c75050;
+}
+
+#expireAllBtn:hover {
+    background-color: #d45a5a;
+}
+
 #historyBtn {
     height: 35px;
-    margin: 32px auto 16px auto;
+    margin: 8px auto 16px auto;
     width: 75%;
 }
 
