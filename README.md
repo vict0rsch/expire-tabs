@@ -29,6 +29,7 @@ Clicking the extension icon opens the settings popup where you can configure:
     -   Tabs exceeding the limit are removed (oldest first).
 -   **View Expired Tabs**: Quick access button to open the full history page.
 -   **Protect Tab**: Toggle protection for the currently active tab. Protected tabs (indicated by a 🔒 badge) will **never** be expired.
+-   **Expire All Tabs Now**: Immediately close all expirable tabs (tabs that are not pinned, active, audible, or protected).
 
 ### ⌨️ Shortcuts
 

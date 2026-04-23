@@ -5,6 +5,7 @@ import {
     cleanUpStorage,
     handleCommand,
     displayTabsStatus,
+    expireAllTabs,
 } from "./logic.js";
 
 const ALARM_NAME = "check_tabs";
@@ -57,6 +58,14 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
 
 // Listen for commands (keyboard shortcuts)
 chrome.commands.onCommand.addListener(handleCommand);
+
+// Listen for messages from popup
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === "expire-all") {
+        expireAllTabs().then(sendResponse);
+        return true;
+    }
+});
 
 // Listen for storage changes to update badge
 chrome.storage.onChanged.addListener((changes, area) => {
