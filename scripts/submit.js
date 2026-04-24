@@ -11,15 +11,15 @@ const main = async () => {
 
     const chromeZipWithVersion = path.join(
         ROOT,
-        `dist/chrome-mv3/expire-tabs-${version}.zip`,
+        `dist/expire-tabs-${version}-chrome.zip`,
     );
     const firefoxZipWithVersion = path.join(
         ROOT,
-        `dist/firefox-mv2/expire-tabs-${version}.zip`,
+        `dist/expire-tabs-${version}-firefox.zip`,
     );
     const firefoxSourceWithVersion = path.join(
         ROOT,
-        `dist/firefox-mv2/expire-tabs-${version}.source.zip`,
+        `dist/expire-tabs-${version}-sources.zip`,
     );
 
     if (!fs.existsSync(chromeZipWithVersion)) {
