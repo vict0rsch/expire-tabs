@@ -53,7 +53,8 @@ describe("Background Interactions", function () {
 
         // Get Tab A ID
         const tabAId = await monitorPage.evaluate(async () => {
-            const tabs = await chrome.tabs.query({
+            const api = globalThis.browser ?? chrome;
+            const tabs = await api.tabs.query({
                 active: true,
                 currentWindow: true,
             });
@@ -62,7 +63,7 @@ describe("Background Interactions", function () {
                 return tabs[0].id;
             }
             // Fallback
-            const matches = await chrome.tabs.query({
+            const matches = await api.tabs.query({
                 url: "*://example.com/*",
             });
             return matches.length ? matches[matches.length - 1].id : null;
@@ -72,7 +73,8 @@ describe("Background Interactions", function () {
 
         const getStorage = async () =>
             monitorPage.evaluate(async () => {
-                return await chrome.storage.local.get(null);
+                const api = globalThis.browser ?? chrome;
+                return await api.storage.local.get(null);
             });
 
         // Check storage for Tab A
@@ -83,8 +85,8 @@ describe("Background Interactions", function () {
         assert.ok(
             timestamp1,
             `Tab A (id=${tabAId}) should have a timestamp. Storage keys found: ${Object.keys(
-                storage
-            ).join(", ")}`
+                storage,
+            ).join(", ")}`,
         );
 
         // Activate Monitor Page (Tab A becomes inactive)
@@ -99,7 +101,7 @@ describe("Background Interactions", function () {
 
         assert.ok(
             timestamp2 > timestamp1,
-            `Timestamp should update on activation (T1: ${timestamp1}, T2: ${timestamp2})`
+            `Timestamp should update on activation (T1: ${timestamp1}, T2: ${timestamp2})`,
         );
     });
 
@@ -112,16 +114,12 @@ describe("Background Interactions", function () {
 
         // Get Tab B ID
         const tabBId = await monitorPage.evaluate(async () => {
-            const tabs = await chrome.tabs.query({
-                url: "*://example2.com/*",
-            });
+            const api = globalThis.browser ?? chrome;
+            const tabs = await api.tabs.query({ url: "*://example2.com/*" });
             if (!tabs.length) {
-                // Fallback to check all tabs for debugging if needed, or just throw
-                const allTabs = await chrome.tabs.query({});
+                const allTabs = await api.tabs.query({});
                 throw new Error(
-                    `Tab not found. Open tabs: ${allTabs
-                        .map((t) => t.url)
-                        .join(", ")}`
+                    `Tab not found. Open tabs: ${allTabs.map((t) => t.url).join(", ")}`,
                 );
             }
             return tabs[0].id;
@@ -129,32 +127,28 @@ describe("Background Interactions", function () {
 
         // Verify data exists
         const existsBefore = await monitorPage.evaluate(async (id) => {
+            const api = globalThis.browser ?? chrome;
             const key = `tab_${id}`;
-            return new Promise((resolve) => {
-                chrome.storage.local.get([key], (res) => resolve(!!res[key]));
-            });
+            const res = await api.storage.local.get([key]);
+            return !!res[key];
         }, tabBId);
 
-        assert.strictEqual(
-            existsBefore,
-            true,
-            "Storage data should exist initially"
-        );
+        assert.strictEqual(existsBefore, true, "Storage data should exist initially");
 
         // Close Tab B
         await pageB.close();
 
         // Verify data removed
         const existsAfter = await monitorPage.evaluate(async (id) => {
+            const api = globalThis.browser ?? chrome;
             const key = `tab_${id}`;
-            return new Promise((resolve) => {
-                chrome.storage.local.get([key], (res) => resolve(!!res[key]));
-            });
+            const res = await api.storage.local.get([key]);
+            return !!res[key];
         }, tabBId);
         assert.strictEqual(
             existsAfter,
             false,
-            "Storage data should be removed after close"
+            "Storage data should be removed after close",
         );
     });
 });

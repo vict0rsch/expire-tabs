@@ -53,11 +53,8 @@ describe("Popup Settings", function () {
 
         // Verify storage
         const settings = await page.evaluate(async () => {
-            return await chrome.storage.local.get([
-                "timeout",
-                "unit",
-                "historyLimit",
-            ]);
+            const api = globalThis.browser ?? chrome;
+            return await api.storage.local.get(["timeout", "unit", "historyLimit"]);
         });
 
         assert.strictEqual(settings.timeout, 45);
@@ -78,8 +75,7 @@ describe("Popup Settings", function () {
         await waitForFunction(page, () => {
             const msg = document.getElementById("statusMsg");
             return (
-                msg.textContent === "Invalid time." &&
-                msg.classList.contains("error")
+                msg.textContent === "Invalid time." && msg.classList.contains("error")
             );
         });
 
@@ -87,7 +83,8 @@ describe("Popup Settings", function () {
         // Since we cleared storage, it should be empty or contain defaults if getSettings was called and cached
         // But saving writes to storage. If save failed, no write.
         const settings = await page.evaluate(async () => {
-            return await chrome.storage.local.get(["timeout"]);
+            const api = globalThis.browser ?? chrome;
+            return await api.storage.local.get(["timeout"]);
         });
         // If nothing saved, it might be undefined or default if the background script initialized it
         // Let's check if it matches the invalid value
@@ -107,13 +104,13 @@ describe("Popup Settings", function () {
         await waitForFunction(page, () => {
             const msg = document.getElementById("statusMsg");
             return (
-                msg.textContent === "Invalid limit." &&
-                msg.classList.contains("error")
+                msg.textContent === "Invalid limit." && msg.classList.contains("error")
             );
         });
 
         const settings = await page.evaluate(async () => {
-            return await chrome.storage.local.get(["historyLimit"]);
+            const api = globalThis.browser ?? chrome;
+            return await api.storage.local.get(["historyLimit"]);
         });
         assert.notStrictEqual(settings.historyLimit, 0);
     });
@@ -134,7 +131,8 @@ describe("Popup Settings", function () {
         });
 
         const settings = await page.evaluate(async () => {
-            return await chrome.storage.local.get(["historyLimit"]);
+            const api = globalThis.browser ?? chrome;
+            return await api.storage.local.get(["historyLimit"]);
         });
         assert.strictEqual(settings.historyLimit, -1);
     });

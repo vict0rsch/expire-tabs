@@ -5,10 +5,7 @@ import fs from "fs";
 import os from "os";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-export const TEST_DATA_PATH = path.join(
-    __dirname,
-    "expired-tabs-test-data.json"
-);
+export const TEST_DATA_PATH = path.join(__dirname, "expired-tabs-test-data.json");
 
 const BROWSER_TO_OUTPUT_DIR = {
     chrome: "chrome-mv3",
@@ -42,13 +39,10 @@ export const dedent = (string) =>
  * @param {string} options.browser - The browser to launch (chrome or firefox).
  * @returns {Promise<Object>} The launched browser and the extension ID.
  */
-export const launchBrowser = async ({
-    headless = true,
-    browser = "chrome",
-} = {}) => {
+export const launchBrowser = async ({ headless = true, browser = "chrome" } = {}) => {
     if (!["chrome", "firefox"].includes(browser)) {
         throw new Error(
-            `Invalid browser: ${browser}, valid browsers are: chrome, firefox`
+            `Invalid browser: ${browser}, valid browsers are: chrome, firefox`,
         );
     }
     const extensionPath = getExtensionPath(browser);
@@ -56,7 +50,7 @@ export const launchBrowser = async ({
     let userDataDir;
     if (browser === "firefox") {
         userDataDir = fs.mkdtempSync(
-            path.join(os.tmpdir(), "puppeteer_firefox_profile-")
+            path.join(os.tmpdir(), "puppeteer_firefox_profile-"),
         );
         let userJsContent = dedent(`
             user_pref("security.csp.enable", false);
@@ -74,11 +68,7 @@ export const launchBrowser = async ({
         pipe: true,
         enableExtensions: [extensionPath],
         userDataDir,
-        args: [
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--window-size=1278,798",
-        ],
+        args: ["--no-sandbox", "--disable-setuid-sandbox", "--window-size=1278,798"],
     });
     let extensionId;
     if (browser === "firefox") {
@@ -157,16 +147,29 @@ export const getFirefoxExtensionId = async (browser) => {
     const manifest = JSON.parse(
         fs.readFileSync(
             path.join(getExtensionPath("firefox"), "manifest.json"),
-            "utf-8"
-        )
+            "utf-8",
+        ),
     );
     const manifestId = manifest.browser_specific_settings.gecko.id;
+    // about:debugging renders cards async — networkidle0 may fire before they
+    // appear. We can't use puppeteer's waitForFunction here because it injects
+    // a `Function()` call which is blocked by about:debugging's CSP. Poll via
+    // evaluate() (CSP-safe) instead.
+    await waitForFunction(
+        extensionPage,
+        (id) =>
+            [
+                ...document.querySelectorAll(
+                    ".debug-target-item.qa-debug-target-item",
+                ),
+            ].some((c) => c.textContent.includes(id)),
+        [manifestId],
+        10000,
+    );
     const extensionId = await extensionPage.evaluate((manifestId) => {
         const extensionCard = [
-            ...document.querySelectorAll(
-                ".debug-target-item.qa-debug-target-item"
-            ),
-        ].find((card) => [card.textContent.includes(manifestId)]);
+            ...document.querySelectorAll(".debug-target-item.qa-debug-target-item"),
+        ].find((card) => card.textContent.includes(manifestId));
         return [...extensionCard.querySelectorAll(".fieldpair")]
             .find((div) => div.textContent.includes("Internal UUID"))
             .querySelector("dd")
@@ -183,9 +186,7 @@ export const getFirefoxExtensionId = async (browser) => {
  */
 export const getOptionsUrl = async (browser, extensionId) => {
     const isChrome = (await browser.version()).includes("Chrome");
-    return `${
-        isChrome ? "chrome" : "moz"
-    }-extension://${extensionId}/options.html`;
+    return `${isChrome ? "chrome" : "moz"}-extension://${extensionId}/options.html`;
 };
 
 /**
@@ -196,9 +197,7 @@ export const getOptionsUrl = async (browser, extensionId) => {
  */
 export const getPopupUrl = async (browser, extensionId) => {
     const isChrome = (await browser.version()).includes("Chrome");
-    return `${
-        isChrome ? "chrome" : "moz"
-    }-extension://${extensionId}/popup.html`;
+    return `${isChrome ? "chrome" : "moz"}-extension://${extensionId}/popup.html`;
 };
 
 /**
@@ -218,7 +217,8 @@ export const loadTestData = () => {
  */
 export const seedStorage = async (page, data) => {
     await page.evaluate(async (data) => {
-        await new Promise((resolve) => chrome.storage.local.set(data, resolve));
+        const api = globalThis.browser ?? chrome;
+        await api.storage.local.set(data);
     }, data);
 };
 
@@ -229,7 +229,8 @@ export const seedStorage = async (page, data) => {
  */
 export const clearStorage = async (page) => {
     await page.evaluate(async () => {
-        await new Promise((resolve) => chrome.storage.local.clear(resolve));
+        const api = globalThis.browser ?? chrome;
+        await api.storage.local.clear();
     });
 };
 

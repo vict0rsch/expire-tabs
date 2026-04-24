@@ -1,10 +1,5 @@
 import assert from "assert";
-import {
-    launchBrowser,
-    waitForFunction,
-    sleep,
-    getOptionsUrl,
-} from "./testUtils.mjs";
+import { launchBrowser, waitForFunction, sleep, getOptionsUrl } from "./testUtils.mjs";
 
 /**
  * Test Suite: Content Script Toast Notifications
@@ -68,27 +63,25 @@ describe("Content Script Toast", function () {
             () => {
                 return (
                     document.querySelector(
-                        '[data-extension-toast-container="true"]'
+                        '[data-extension-toast-container="true"]',
                     ) !== null
                 );
             },
             [],
-            2000
+            2000,
         );
 
         const containerStyles = await page.evaluate(() => {
             const container = document.querySelector(
-                '[data-extension-toast-container="true"]'
+                '[data-extension-toast-container="true"]',
             );
-            return container
-                ? window.getComputedStyle(container).position
-                : null;
+            return container ? window.getComputedStyle(container).position : null;
         });
 
         assert.strictEqual(
             containerStyles,
             "fixed",
-            "Toast container should be created with fixed position"
+            "Toast container should be created with fixed position",
         );
     });
 
@@ -104,19 +97,18 @@ describe("Content Script Toast", function () {
             () => {
                 return (
                     document.querySelector(
-                        '[data-extension-toast-container="true"]'
+                        '[data-extension-toast-container="true"]',
                     ) !== null
                 );
             },
             [],
-            2000
+            2000,
         );
 
         // Get tab ID using monitor page (has chrome API access)
         const tabId = await monitorPage.evaluate(async () => {
-            const tabs = await chrome.tabs.query({
-                url: "*://example.com/*",
-            });
+            const api = globalThis.browser ?? chrome;
+            const tabs = await api.tabs.query({ url: "*://example.com/*" });
             // Get the most recently created tab with example.com
             return tabs.length > 0 ? tabs[tabs.length - 1].id : null;
         });
@@ -125,17 +117,17 @@ describe("Content Script Toast", function () {
 
         // Send message from monitor page (which has chrome API access) to content script
         await monitorPage.evaluate(async (tabId) => {
-            const delay = (ms) =>
-                new Promise((resolve) => setTimeout(resolve, ms));
+            const api = globalThis.browser ?? chrome;
+            const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
             try {
-                await chrome.tabs.sendMessage(tabId, {
+                await api.tabs.sendMessage(tabId, {
                     type: "protection-status",
                     isProtected: true,
                 });
             } catch (err) {
                 // Content script might not be ready yet, retry after a delay
                 await delay(50);
-                await chrome.tabs.sendMessage(tabId, {
+                await api.tabs.sendMessage(tabId, {
                     type: "protection-status",
                     isProtected: true,
                 });
@@ -147,7 +139,7 @@ describe("Content Script Toast", function () {
             page,
             () => {
                 const toasts = document.querySelectorAll(
-                    '[data-extension-toast="true"]'
+                    '[data-extension-toast="true"]',
                 );
                 for (const toast of toasts) {
                     const text = toast.textContent || "";
@@ -158,25 +150,21 @@ describe("Content Script Toast", function () {
                 return false;
             },
             [],
-            1500
+            1500,
         );
 
         const { toastExists, hasCorrectStyle } = await page.evaluate(() => {
-            const toasts = document.querySelectorAll(
-                '[data-extension-toast="true"]'
-            );
+            const toasts = document.querySelectorAll('[data-extension-toast="true"]');
             for (const toast of toasts) {
                 const text = toast.textContent || "";
                 if (text.includes("Protected") && text.includes("🔒")) {
                     const header = toast.querySelector("div");
                     if (header) {
-                        const bgColor =
-                            window.getComputedStyle(header).backgroundColor;
+                        const bgColor = window.getComputedStyle(header).backgroundColor;
                         return {
                             toastExists: true,
                             hasCorrectStyle:
-                                bgColor.includes("46") &&
-                                bgColor.includes("49"),
+                                bgColor.includes("46") && bgColor.includes("49"),
                         };
                     }
                 }
@@ -185,10 +173,7 @@ describe("Content Script Toast", function () {
         });
 
         assert.ok(toastExists, "Toast with 'Protected 🔒' should be displayed");
-        assert.ok(
-            hasCorrectStyle,
-            "Protected toast should have dark background color"
-        );
+        assert.ok(hasCorrectStyle, "Protected toast should have dark background color");
     });
 
     it("should show Unprotected toast when receiving unprotected status", async function () {
@@ -203,19 +188,18 @@ describe("Content Script Toast", function () {
             () => {
                 return (
                     document.querySelector(
-                        '[data-extension-toast-container="true"]'
+                        '[data-extension-toast-container="true"]',
                     ) !== null
                 );
             },
             [],
-            2000
+            2000,
         );
 
         // Get tab ID using monitor page
         const tabId = await monitorPage.evaluate(async () => {
-            const tabs = await chrome.tabs.query({
-                url: "*://example.com/*",
-            });
+            const api = globalThis.browser ?? chrome;
+            const tabs = await api.tabs.query({ url: "*://example.com/*" });
             return tabs.length > 0 ? tabs[tabs.length - 1].id : null;
         });
 
@@ -223,17 +207,17 @@ describe("Content Script Toast", function () {
 
         // Send unprotected message via monitor page
         await monitorPage.evaluate(async (tabId) => {
-            const delay = (ms) =>
-                new Promise((resolve) => setTimeout(resolve, ms));
+            const api = globalThis.browser ?? chrome;
+            const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
             try {
-                await chrome.tabs.sendMessage(tabId, {
+                await api.tabs.sendMessage(tabId, {
                     type: "protection-status",
                     isProtected: false,
                 });
             } catch (err) {
                 // Content script might not be ready yet, retry after a delay
                 await delay(50);
-                await chrome.tabs.sendMessage(tabId, {
+                await api.tabs.sendMessage(tabId, {
                     type: "protection-status",
                     isProtected: false,
                 });
@@ -245,7 +229,7 @@ describe("Content Script Toast", function () {
             page,
             () => {
                 const toasts = document.querySelectorAll(
-                    '[data-extension-toast="true"]'
+                    '[data-extension-toast="true"]',
                 );
                 for (const toast of toasts) {
                     const text = toast.textContent || "";
@@ -256,25 +240,21 @@ describe("Content Script Toast", function () {
                 return false;
             },
             [],
-            1500
+            1500,
         );
 
         const { toastExists, hasCorrectStyle } = await page.evaluate(() => {
-            const toasts = document.querySelectorAll(
-                '[data-extension-toast="true"]'
-            );
+            const toasts = document.querySelectorAll('[data-extension-toast="true"]');
             for (const toast of toasts) {
                 const text = toast.textContent || "";
                 if (text.includes("Unprotected") && text.includes("⏳")) {
                     const header = toast.querySelector("div");
                     if (header) {
-                        const bgColor =
-                            window.getComputedStyle(header).backgroundColor;
+                        const bgColor = window.getComputedStyle(header).backgroundColor;
                         return {
                             toastExists: true,
                             hasCorrectStyle:
-                                bgColor.includes("145") &&
-                                bgColor.includes("150"),
+                                bgColor.includes("145") && bgColor.includes("150"),
                         };
                     }
                 }
@@ -282,13 +262,10 @@ describe("Content Script Toast", function () {
             return { toastExists: false, hasCorrectStyle: false };
         });
 
-        assert.ok(
-            toastExists,
-            "Toast with 'Unprotected ⏳' should be displayed"
-        );
+        assert.ok(toastExists, "Toast with 'Unprotected ⏳' should be displayed");
         assert.ok(
             hasCorrectStyle,
-            "Unprotected toast should have light background color"
+            "Unprotected toast should have light background color",
         );
     });
 
@@ -305,29 +282,28 @@ describe("Content Script Toast", function () {
             () => {
                 return (
                     document.querySelector(
-                        '[data-extension-toast-container="true"]'
+                        '[data-extension-toast-container="true"]',
                     ) !== null
                 );
             },
             [],
-            3000
+            3000,
         );
 
         // Get tab ID
         const tabId = await monitorPage.evaluate(async () => {
-            const tabs = await chrome.tabs.query({
-                url: "*://example.com/*",
-            });
+            const api = globalThis.browser ?? chrome;
+            const tabs = await api.tabs.query({ url: "*://example.com/*" });
             return tabs.length > 0 ? tabs[tabs.length - 1].id : null;
         });
 
         // Send message with retry logic (in case listener isn't ready yet)
         await monitorPage.evaluate(async (tabId) => {
-            const delay = (ms) =>
-                new Promise((resolve) => setTimeout(resolve, ms));
+            const api = globalThis.browser ?? chrome;
+            const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
             for (let attempt = 0; attempt <= 3; attempt++) {
                 try {
-                    await chrome.tabs.sendMessage(tabId, {
+                    await api.tabs.sendMessage(tabId, {
                         type: "protection-status",
                         isProtected: true,
                     });
@@ -343,24 +319,19 @@ describe("Content Script Toast", function () {
         await waitForFunction(
             page,
             () => {
-                return (
-                    document.querySelector('[data-extension-toast="true"]') !==
-                    null
-                );
+                return document.querySelector('[data-extension-toast="true"]') !== null;
             },
             [],
-            1500
+            1500,
         );
 
         const toastExists = await page.evaluate(() => {
-            return (
-                document.querySelector('[data-extension-toast="true"]') !== null
-            );
+            return document.querySelector('[data-extension-toast="true"]') !== null;
         });
 
         assert.ok(
             toastExists,
-            "Toast should appear even when message is sent before content script is ready"
+            "Toast should appear even when message is sent before content script is ready",
         );
     });
 });

@@ -96,18 +96,18 @@ describe("Expire Tabs Extension E2E", function () {
         // Verify first item is ours
         const firstItemTitle = await page.$eval(
             "#history-list li:first-child .title",
-            (el) => el.textContent
+            (el) => el.textContent,
         );
         assert.strictEqual(
             firstItemTitle,
             "Delete Me",
-            "First item should be the one we added"
+            "First item should be the one we added",
         );
 
         // Check dataset id
         const firstItemId = await page.$eval(
             "#history-list li:first-child",
-            (el) => el.dataset.id
+            (el) => el.dataset.id,
         );
         // Click delete button on first item
         await page.click("#history-list li:first-child .delete-btn");
@@ -115,7 +115,7 @@ describe("Expire Tabs Extension E2E", function () {
         assert.strictEqual(
             dialogMessage,
             "Remove this item?",
-            "Dialog message should be correct"
+            "Dialog message should be correct",
         );
         // Wait for list to update
         // We wait until the first item is NOT the one we deleted
@@ -123,13 +123,13 @@ describe("Expire Tabs Extension E2E", function () {
             page,
             (deletedId) => {
                 const firstItem = document.querySelector(
-                    "#history-list li:first-child"
+                    "#history-list li:first-child",
                 );
                 // If list is empty or first item is different
                 return !firstItem || firstItem.dataset.id !== deletedId;
             },
             [firstItemId],
-            3000
+            3000,
         );
 
         const itemsAfter = await page.$$("#history-list li");
@@ -137,7 +137,7 @@ describe("Expire Tabs Extension E2E", function () {
         if (itemsAfter.length > 0) {
             const text = await page.evaluate(
                 (el) => el.querySelector(".title")?.textContent,
-                itemsAfter[0]
+                itemsAfter[0],
             );
             assert.notStrictEqual(text, "Delete Me", "Item should be deleted");
         }
@@ -153,11 +153,11 @@ describe("Expire Tabs Extension E2E", function () {
 
         // Initial state: "Protect Tab" (unprotected)
         let btnText = await page.$eval("#protectToggleBtn", (el) =>
-            el.textContent.trim()
+            el.textContent.trim(),
         );
         assert.ok(
             btnText.includes("Protect Tab"),
-            "Initial state should be 'Protect Tab'"
+            "Initial state should be 'Protect Tab'",
         );
 
         // Click to protect
@@ -174,19 +174,19 @@ describe("Expire Tabs Extension E2E", function () {
 
         // Verify in storage
         const isProtectedInStorage = await page.evaluate(async () => {
-            const [tab] = await chrome.tabs.query({
+            const api = globalThis.browser ?? chrome;
+            const [tab] = await api.tabs.query({
                 active: true,
                 currentWindow: true,
             });
             const key = `protected_${tab.id}`;
-            return new Promise((resolve) => {
-                chrome.storage.local.get([key], (res) => resolve(!!res[key]));
-            });
+            const res = await api.storage.local.get([key]);
+            return !!res[key];
         });
         assert.strictEqual(
             isProtectedInStorage,
             true,
-            "Storage should have protection key"
+            "Storage should have protection key",
         );
 
         // Click to unprotect
@@ -200,19 +200,19 @@ describe("Expire Tabs Extension E2E", function () {
 
         // Verify storage cleared
         const isProtectedAfter = await page.evaluate(async () => {
-            const [tab] = await chrome.tabs.query({
+            const api = globalThis.browser ?? chrome;
+            const [tab] = await api.tabs.query({
                 active: true,
                 currentWindow: true,
             });
             const key = `protected_${tab.id}`;
-            return new Promise((resolve) => {
-                chrome.storage.local.get([key], (res) => resolve(!!res[key]));
-            });
+            const res = await api.storage.local.get([key]);
+            return !!res[key];
         });
         assert.strictEqual(
             isProtectedAfter,
             false,
-            "Storage should NOT have protection key"
+            "Storage should NOT have protection key",
         );
     });
 });

@@ -216,6 +216,10 @@ describe("Options Page New Features", function () {
 
         await reloadPage(page);
         await page.waitForSelector("#downloadHistory");
+        // The download click handler is attached after loadAndRender() completes
+        // inside the DOMContentLoaded handler. Wait for the list to render to
+        // ensure subsequent listener registration (incl. #downloadHistory) ran.
+        await page.waitForSelector("#history-list li");
 
         if (process.env.browser === "firefox") {
             // Firefox specific verification: intercept the Blob creation
