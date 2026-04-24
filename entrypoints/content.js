@@ -1,11 +1,7 @@
-(function () {
-    'use strict';
-
-    /**
-     * Content script that displays toast notifications to show tab protection status.
-     * Styled to match the extension's design system with inline styles to avoid CSS conflicts.
-     */
-    (function () {
+export default defineContentScript({
+    matches: ["<all_urls>"],
+    runAt: "document_idle",
+    main() {
         const colors = {
             background: "#2e315c",
             backgroundLight: "rgb(145, 150, 230)",
@@ -16,12 +12,12 @@
         toastContainer.setAttribute("data-extension-toast-container", "true");
         Object.assign(toastContainer.style, {
             position: "fixed",
-            bottom: "30px",
-            right: "30px",
+            top: "20px",
+            right: "20px",
             zIndex: "2147483647",
             pointerEvents: "none",
             display: "flex",
-            flexDirection: "column-reverse",
+            flexDirection: "column",
             gap: "16px",
             fontFamily:
                 '"Quicksand", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif',
@@ -136,14 +132,13 @@
             }, 200);
         }
 
-        chrome.runtime.onMessage.addListener((message) => {
+        browser.runtime.onMessage.addListener((message) => {
             if (message.type === "protection-status") {
                 showToast(
                     message.isProtected ? "Protected 🔒" : "Unprotected ⏳",
-                    message.isProtected
+                    message.isProtected,
                 );
             }
         });
-    })();
-
-})();
+    },
+});

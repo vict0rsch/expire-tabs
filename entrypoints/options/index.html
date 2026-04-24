@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
@@ -10,34 +10,14 @@
             href="https://fonts.googleapis.com/css2?family=Baloo+Chettan+2:wght@400..800&family=Quicksand:wght@300..700&display=swap"
             rel="stylesheet"
         />
-        <link rel="stylesheet" href="../utils/bootstrap.min.css" />
-        <link rel="stylesheet" href="../utils/shared.css" />
-        <link rel="stylesheet" href="options.css" />
-        <!-- icon -->
-        <link
-            rel="icon"
-            href="../icons/icon128.png"
-            type="image/png"
-            sizes="128x128"
-        />
-        <link
-            rel="icon"
-            href="../icons/icon96.png"
-            type="image/png"
-            sizes="96x96"
-        />
-        <link
-            rel="icon"
-            href="../icons/icon48.png"
-            type="image/png"
-            sizes="48x48"
-        />
-        <link
-            rel="icon"
-            href="../icons/icon16.png"
-            type="image/png"
-            sizes="16x16"
-        />
+        <link rel="stylesheet" href="/bootstrap/bootstrap.min.css" />
+        <link rel="stylesheet" href="/utils/shared.css" />
+        <link rel="stylesheet" href="./style.css" />
+        <!-- icons -->
+        <link rel="icon" href="/icon/128.png" type="image/png" sizes="128x128" />
+        <link rel="icon" href="/icon/96.png" type="image/png" sizes="96x96" />
+        <link rel="icon" href="/icon/48.png" type="image/png" sizes="48x48" />
+        <link rel="icon" href="/icon/16.png" type="image/png" sizes="16x16" />
     </head>
     <body>
         <div class="container">
@@ -77,8 +57,7 @@
                             id="deleteOlderThanButton"
                             disabled
                         >
-                            Delete <span id="oldEntriesCount"></span> Old
-                            Entries
+                            Delete <span id="oldEntriesCount"></span> Old Entries
                         </button>
                     </div>
                 </div>
@@ -108,10 +87,7 @@
                             class="secondary-outline w-100"
                             id="deleteSearchResults"
                         >
-                            Delete Search Results (<span
-                                id="results-count"
-                            ></span
-                            >)
+                            Delete Search Results (<span id="results-count"></span>)
                         </button>
                     </div>
                 </div>
@@ -120,7 +96,7 @@
                 <!-- History items will be injected here -->
             </ul>
         </div>
-        <script src="../utils/bootstrap.bundle.js"></script>
-        <script src="options.bundle.js"></script>
+        <script src="/bootstrap/bootstrap.bundle.js"></script>
+        <script type="module" src="./main.js"></script>
     </body>
 </html>

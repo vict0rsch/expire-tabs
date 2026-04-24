@@ -12,7 +12,7 @@ import {
     waitForFunction,
     reloadPage,
 } from "./testUtils.mjs";
-import { getDefaults, unitToMs } from "../src/utils/config.js";
+import { getDefaults, unitToMs } from "../utils/config.js";
 
 const defaults = getDefaults();
 const defaultUnitMultiplier = unitToMs(defaults.unit);
@@ -107,8 +107,7 @@ describe("Options Page New Features", function () {
         // Wait for button to be enabled and show count
         await waitForFunction(page, () => {
             const btn = document.getElementById("deleteOlderThanButton");
-            const count =
-                document.getElementById("oldEntriesCount").textContent;
+            const count = document.getElementById("oldEntriesCount").textContent;
             return !btn.disabled && count === "1";
         });
 
@@ -130,13 +129,9 @@ describe("Options Page New Features", function () {
 
         const title = await page.$eval(
             "#history-list li .title",
-            (el) => el.textContent
+            (el) => el.textContent,
         );
-        assert.strictEqual(
-            title,
-            "New Tab",
-            "Remaining tab should be the new one"
-        );
+        assert.strictEqual(title, "New Tab", "Remaining tab should be the new one");
     });
 
     it("should delete search results", async function () {
@@ -179,10 +174,7 @@ describe("Options Page New Features", function () {
         });
 
         // Check count in button
-        const countText = await page.$eval(
-            "#results-count",
-            (el) => el.textContent
-        );
+        const countText = await page.$eval("#results-count", (el) => el.textContent);
         assert.strictEqual(countText, "2", "Button should show 2 results");
 
         // Setup dialog handler
@@ -203,7 +195,7 @@ describe("Options Page New Features", function () {
 
         const title = await page.$eval(
             "#history-list li .title",
-            (el) => el.textContent
+            (el) => el.textContent,
         );
         assert.strictEqual(title, "Banana", "Remaining tab should be Banana");
     });
@@ -224,6 +216,10 @@ describe("Options Page New Features", function () {
 
         await reloadPage(page);
         await page.waitForSelector("#downloadHistory");
+        // The download click handler is attached after loadAndRender() completes
+        // inside the DOMContentLoaded handler. Wait for the list to render to
+        // ensure subsequent listener registration (incl. #downloadHistory) ran.
+        await page.waitForSelector("#history-list li");
 
         if (process.env.browser === "firefox") {
             // Firefox specific verification: intercept the Blob creation
@@ -241,14 +237,11 @@ describe("Options Page New Features", function () {
             });
 
             const data = JSON.parse(downloadData);
-            assert.ok(
-                data.expiredTabs,
-                "Download data should contain expiredTabs"
-            );
+            assert.ok(data.expiredTabs, "Download data should contain expiredTabs");
             assert.strictEqual(
                 data.expiredTabs.length,
                 testData.expiredTabs.length,
-                "Should have correct number of tabs"
+                "Should have correct number of tabs",
             );
             return;
         }
@@ -262,8 +255,7 @@ describe("Options Page New Features", function () {
             while (Date.now() - start < timeout) {
                 const files = fs.readdirSync(dir);
                 const jsonFiles = files.filter(
-                    (f) =>
-                        f.startsWith("expired-tabs-data") && f.endsWith(".json")
+                    (f) => f.startsWith("expired-tabs-data") && f.endsWith(".json"),
                 );
                 if (jsonFiles.length > 0) return jsonFiles[0];
                 await new Promise((r) => setTimeout(r, 200));
@@ -289,15 +281,12 @@ describe("Options Page New Features", function () {
 
         // Seed 25 items (Batch size is 10)
         // We'll generate them to ensure we have enough
-        const tabs = Array.from(
-            { length: defaults.batchSize * 3 + 1 },
-            (_, i) => ({
-                id: `tab-${i}`,
-                title: `Tab ${i}`,
-                url: `http://example.com/${i}`,
-                closedAt: Date.now() - i * 1000,
-            })
-        );
+        const tabs = Array.from({ length: defaults.batchSize * 3 + 1 }, (_, i) => ({
+            id: `tab-${i}`,
+            title: `Tab ${i}`,
+            url: `http://example.com/${i}`,
+            closedAt: Date.now() - i * 1000,
+        }));
 
         await seedStorage(page, { expiredTabs: tabs });
 
@@ -309,7 +298,7 @@ describe("Options Page New Features", function () {
         assert.strictEqual(
             count,
             defaults.batchSize,
-            `Should initially render ${defaults.batchSize} items`
+            `Should initially render ${defaults.batchSize} items`,
         );
 
         // Scroll to bottom
@@ -320,7 +309,7 @@ describe("Options Page New Features", function () {
         await waitForFunction(
             page,
             (c) => document.querySelectorAll("#history-list li").length > c,
-            [count]
+            [count],
         );
 
         count = await page.$$eval("#history-list li", (lis) => lis.length);
@@ -328,7 +317,7 @@ describe("Options Page New Features", function () {
         assert.strictEqual(
             count,
             defaults.batchSize * 2,
-            `Should render next batch (${defaults.batchSize} items)`
+            `Should render next batch (${defaults.batchSize} items)`,
         );
 
         // Scroll again
@@ -339,15 +328,11 @@ describe("Options Page New Features", function () {
         await waitForFunction(
             page,
             (c) => document.querySelectorAll("#history-list li").length > c,
-            [count]
+            [count],
         );
 
         count = await page.$$eval("#history-list li", (lis) => lis.length);
-        assert.strictEqual(
-            count,
-            defaults.batchSize * 3,
-            "Should render all items"
-        );
+        assert.strictEqual(count, defaults.batchSize * 3, "Should render all items");
     });
 
     it("should filter tabs on search", async function () {
@@ -364,9 +349,9 @@ describe("Options Page New Features", function () {
                     .every(
                         (term) =>
                             tab.title.toLowerCase().includes(term) ||
-                            tab.url.toLowerCase().includes(term)
-                    )
-            ).length
+                            tab.url.toLowerCase().includes(term),
+                    ),
+            ).length,
         );
 
         await reloadPage(page);
@@ -376,25 +361,19 @@ describe("Options Page New Features", function () {
         await page.type("#search", query);
 
         const count = await page.evaluate(
-            () => document.querySelectorAll("#history-list li").length
+            () => document.querySelectorAll("#history-list li").length,
         );
         assert.strictEqual(
             count,
             nTabsToRender,
-            "Should have the correct number of items"
+            "Should have the correct number of items",
         );
 
         await page.type("#search", Math.random().toString());
 
         const countNoMatch = await page.evaluate(
-            () =>
-                document.querySelectorAll("#history-list li:not(.no-match)")
-                    .length
+            () => document.querySelectorAll("#history-list li:not(.no-match)").length,
         );
-        assert.strictEqual(
-            countNoMatch,
-            0,
-            "Should have 0 items for random query"
-        );
+        assert.strictEqual(countNoMatch, 0, "Should have 0 items for random query");
     });
 });

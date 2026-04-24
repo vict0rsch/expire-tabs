@@ -3,7 +3,7 @@ import {
     saveSettings,
     getTabProtection,
     setTabProtection,
-} from "../utils/storage.js";
+} from "../../utils/storage.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
     const elements = {};
@@ -50,7 +50,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // Handle Protection Button
-    const [tab] = await chrome.tabs.query({
+    const [tab] = await browser.tabs.query({
         active: true,
         currentWindow: true,
     });
@@ -97,11 +97,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 return;
             }
 
-            if (
-                isNaN(historyLimit) ||
-                historyLimit < -1 ||
-                historyLimit === 0
-            ) {
+            if (isNaN(historyLimit) || historyLimit < -1 || historyLimit === 0) {
                 elements.statusMsg.textContent = "Invalid limit.";
                 elements.statusMsg.classList.add("error");
                 return;
@@ -121,12 +117,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         elements.expireAllBtn.addEventListener("click", async () => {
             elements.expireAllBtn.disabled = true;
             elements.statusMsg.classList.remove("error");
-            const response = await chrome.runtime.sendMessage({
+            const response = await browser.runtime.sendMessage({
                 type: "expire-all",
             });
             const count = response?.closed ?? 0;
             elements.statusMsg.textContent =
-                count > 0 ? `Closed ${count} tab${count > 1 ? "s" : ""}.` : "No expirable tabs.";
+                count > 0
+                    ? `Closed ${count} tab${count > 1 ? "s" : ""}.`
+                    : "No expirable tabs.";
             elements.expireAllBtn.disabled = false;
             setTimeout(() => {
                 elements.statusMsg.textContent = "";
@@ -137,7 +135,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Open history
     if (elements.historyBtn) {
         elements.historyBtn.addEventListener("click", () =>
-            chrome.runtime.openOptionsPage()
+            browser.runtime.openOptionsPage(),
         );
     }
 });

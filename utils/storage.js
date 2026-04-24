@@ -25,7 +25,7 @@ import { getDefaults, unitToMs } from "./config.js";
  */
 export const getSettings = async () => {
     const defaults = getDefaults();
-    let { timeout, unit, historyLimit } = await chrome.storage.local.get([
+    let { timeout, unit, historyLimit } = await browser.storage.local.get([
         "timeout",
         "unit",
         "historyLimit",
@@ -53,14 +53,14 @@ export const getSettings = async () => {
  * @returns {Promise<void>}
  */
 export const saveSettings = async (settings) =>
-    await chrome.storage.local.set(settings);
+    await browser.storage.local.set(settings);
 
 /**
  * Retrieves closed tabs history from local storage.
  * @returns {Promise<ExpiredTab[]>}
  */
 export const getExpiredTabs = async () => {
-    const { expiredTabs } = await chrome.storage.local.get(["expiredTabs"]);
+    const { expiredTabs } = await browser.storage.local.get(["expiredTabs"]);
     return expiredTabs || [];
 };
 
@@ -80,8 +80,7 @@ export const addExpiredTab = async (tabInfo) => {
         } else {
             // Fallback for environments without randomUUID
             tabInfo.id =
-                Date.now().toString(36) +
-                Math.random().toString(36).substr(2, 9);
+                Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
         }
     }
 
@@ -92,7 +91,7 @@ export const addExpiredTab = async (tabInfo) => {
         expiredTabs.length = historyLimit;
     }
 
-    await chrome.storage.local.set({ expiredTabs });
+    await browser.storage.local.set({ expiredTabs });
 };
 
 /**
@@ -106,7 +105,7 @@ export const removeExpiredTab = async (tabId) => {
         // Ensure strict string comparison just in case
         return String(t.id) !== String(tabId);
     });
-    await chrome.storage.local.set({ expiredTabs: newExpiredTabs });
+    await browser.storage.local.set({ expiredTabs: newExpiredTabs });
 };
 
 /**
@@ -114,7 +113,7 @@ export const removeExpiredTab = async (tabId) => {
  * @returns {Promise<void>}
  */
 export const clearExpiredTabs = async () =>
-    await chrome.storage.local.set({ expiredTabs: [] });
+    await browser.storage.local.set({ expiredTabs: [] });
 
 /**
  * Generates storage key for a tab's activity timestamp.
@@ -137,7 +136,7 @@ export const getProtectedKey = (tabId) => `protected_${tabId}`;
  */
 export const getTabProtection = async (tabId) => {
     const key = getProtectedKey(tabId);
-    const { [key]: isProtected } = await chrome.storage.local.get([key]);
+    const { [key]: isProtected } = await browser.storage.local.get([key]);
     return !!isProtected;
 };
 
@@ -152,10 +151,10 @@ export const setTabProtection = async (tabId, isProtected) => {
     const tabKey = getTabKey(tabId);
 
     if (isProtected) {
-        await chrome.storage.local.set({ [protectedKey]: true });
+        await browser.storage.local.set({ [protectedKey]: true });
     } else {
         // Unprotecting: Remove protection AND reset timestamp
-        await chrome.storage.local.remove(protectedKey);
-        await chrome.storage.local.set({ [tabKey]: Date.now() });
+        await browser.storage.local.remove(protectedKey);
+        await browser.storage.local.set({ [tabKey]: Date.now() });
     }
 };

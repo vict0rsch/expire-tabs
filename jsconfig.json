@@ -1,0 +1,12 @@
+{
+    "compilerOptions": {
+        "target": "ESNext",
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "paths": {
+            "~/*": ["./*"],
+            "@/*": ["./*"]
+        }
+    },
+    "include": ["entrypoints/**/*", "utils/**/*", ".wxt/types/**/*"]
+}

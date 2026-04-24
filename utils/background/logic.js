@@ -5,26 +5,92 @@ import {
     getProtectedKey,
     getTabProtection,
     setTabProtection,
-} from "../utils/storage.js";
-import { msToDuration } from "../utils/config.js";
+} from "../storage.js";
+import { msToDuration } from "../config.js";
+
+/**
+ * Extracts the numeric tab id from a `tab_<id>` or `protected_<id>` storage key.
+ * @param {string} key
+ * @returns {number|null} The tab id, or null if the key is not tab-scoped.
+ */
+function tabIdFromStorageKey(key) {
+    let raw;
+    if (key.startsWith("tab_")) {
+        raw = key.slice("tab_".length);
+    } else if (key.startsWith("protected_")) {
+        raw = key.slice("protected_".length);
+    } else {
+        return null;
+    }
+    const id = parseInt(raw, 10);
+    return Number.isNaN(id) ? null : id;
+}
+
+/**
+ * Resolves the full set of tabs the extension knows about, working around the
+ * Zen/Firefox bug where `browser.tabs.query({})` only returns tabs in the
+ * currently-active workspace (see https://github.com/zen-browser/desktop/issues/8989).
+ *
+ * For every tab id referenced by a `tab_*` or `protected_*` storage key that is
+ * not in the query result, we fall back to `browser.tabs.get(id)`. If the tab
+ * actually exists (cross-workspace), it is returned in `hiddenTabs`. If the
+ * lookup fails, the id is reported in `deletedTabIds` so callers can safely
+ * clean up its keys.
+ *
+ * @returns {Promise<{
+ *   visibleTabs: chrome.tabs.Tab[],
+ *   hiddenTabs: chrome.tabs.Tab[],
+ *   deletedTabIds: Set<number>,
+ *   storedData: Object,
+ * }>}
+ */
+export async function resolveTrackedTabs() {
+    const visibleTabs = await browser.tabs.query({});
+    const storedData = await browser.storage.local.get(null);
+    const visibleIds = new Set(visibleTabs.map((t) => t.id));
+
+    const candidateIds = new Set();
+    for (const key of Object.keys(storedData)) {
+        const tabId = tabIdFromStorageKey(key);
+        if (tabId !== null && !visibleIds.has(tabId)) {
+            candidateIds.add(tabId);
+        }
+    }
+
+    const hiddenTabs = [];
+    const deletedTabIds = new Set();
+
+    if (candidateIds.size > 0) {
+        const ids = [...candidateIds];
+        const results = await Promise.allSettled(ids.map((id) => browser.tabs.get(id)));
+        for (let i = 0; i < results.length; i++) {
+            const result = results[i];
+            if (result.status === "fulfilled" && result.value) {
+                hiddenTabs.push(result.value);
+            } else {
+                deletedTabIds.add(ids[i]);
+            }
+        }
+    }
+
+    return { visibleTabs, hiddenTabs, deletedTabIds, storedData };
+}
+
 /**
  * Checks all tabs and closes them if they have expired.
  * Fetches storage data in bulk to optimize performance.
  * @returns {Promise<void>}
  */
 export async function checkTabs() {
-    const { expired, orphan } = await getTabsStatus();
+    const { expired, orphan, hiddenTabIds } = await getTabsStatus();
     if (expired.length > 0) {
         console.log("To expire tabs:", expired);
     }
-    if (orphan.length > 0) {
-        console.log("Orphan tabs:", orphan);
-    }
     for (const tab of expired) {
-        await closeTab(tab);
+        await closeTab(tab, true, hiddenTabIds.has(tab.id));
     }
     for (const tab of orphan) {
-        await chrome.storage.local.set({ [getTabKey(tab.id)]: Date.now() });
+        await browser.storage.local.set({ [getTabKey(tab.id)]: Date.now() });
     }
 }
 
@@ -33,7 +99,7 @@ export async function checkTabs() {
  * @returns {Promise<void>}
  */
 export async function displayTabsStatus() {
-    const storedData = await chrome.storage.local.get(null);
+    const storedData = await browser.storage.local.get(null);
     const tabsStatus = await getTabsStatus();
     const { timeoutMs } = await getSettings();
     const headers = {
@@ -67,20 +133,24 @@ export async function displayTabsStatus() {
             });
             if (key === "mayExpire") {
                 displays.sort(
-                    (a, b) =>
-                        storedData[getTabKey(a.id)] -
-                        storedData[getTabKey(b.id)]
+                    (a, b) => storedData[getTabKey(a.id)] - storedData[getTabKey(b.id)],
                 );
             }
             console.log(displays);
         }
     }
-    console.log("--------------------------------");
 }
 
 /**
  * Gets the status of all tabs, categorized by priority.
+ *
+ * Includes both tabs returned by `browser.tabs.query({})` and "hidden" tabs
+ * that only show up via `browser.tabs.get` (e.g. tabs in other Zen/Firefox
+ * workspaces). Hidden tabs are classified by the same priority rules so that
+ * pinned/audible/active hidden tabs are still shielded from expiration.
+ *
  * Priority order: pinned > audible > active > protected > expired > mayExpire > orphan.
+ *
  * @returns {Promise<Object>}
  * @property {chrome.tabs.Tab[]} pinned - pinned tabs
  * @property {chrome.tabs.Tab[]} audible - playing audio
@@ -88,13 +158,14 @@ export async function displayTabsStatus() {
  * @property {chrome.tabs.Tab[]} protected - user-protected tabs
  * @property {chrome.tabs.Tab[]} expired - past timeout, should be closed
  * @property {chrome.tabs.Tab[]} mayExpire - tracked but not yet expired
- * @property {chrome.tabs.Tab[]} orphan - not listed in storage, need timestamp reset
+ * @property {chrome.tabs.Tab[]} orphan - visible tab without a storage entry, needs a timestamp reset
+ * @property {Set<number>} hiddenTabIds - ids of tabs that were resolved via `tabs.get` only
  */
 export async function getTabsStatus() {
     const { timeoutMs } = await getSettings();
     const now = Date.now();
-    const tabs = await chrome.tabs.query({});
-    const storedData = await chrome.storage.local.get(null);
+    const { visibleTabs, hiddenTabs, storedData } = await resolveTrackedTabs();
+    const hiddenTabIds = new Set(hiddenTabs.map((t) => t.id));
     const tabsStatus = {
         expired: [], // expired, to close
         audible: [], // playing audio, to ignore
@@ -102,9 +173,10 @@ export async function getTabsStatus() {
         protected: [], // protected, to ignore
         active: [], // currently active, to ignore
         mayExpire: [], // may become expired but not yet
-        orphan: [], // can be timed out but not listed in storage, to reset timestamp
+        orphan: [], // visible but not listed in storage, to reset timestamp
+        hiddenTabIds,
     };
-    for (const tab of tabs) {
+    for (const tab of [...visibleTabs, ...hiddenTabs]) {
         if (tab.pinned) {
             tabsStatus.pinned.push(tab);
         } else if (tab.audible) {
@@ -129,10 +201,10 @@ export async function getTabsStatus() {
  * @returns {Promise<{closed: number}>} The number of tabs that were closed.
  */
 export async function expireAllTabs() {
-    const { expired, mayExpire, orphan } = await getTabsStatus();
+    const { expired, mayExpire, orphan, hiddenTabIds } = await getTabsStatus();
     const toClose = [...expired, ...mayExpire, ...orphan];
     for (const tab of toClose) {
-        await closeTab(tab);
+        await closeTab(tab, true, hiddenTabIds.has(tab.id));
     }
     return { closed: toClose.length };
 }
@@ -141,11 +213,23 @@ export async function expireAllTabs() {
  * Closes a specific tab and adds it to history.
  * @param {chrome.tabs.Tab} tab
  * @param {boolean} [log=true] - Whether to log the tab closure to the console.
+ * @param {boolean} [isHidden=false] - True if the tab is only reachable via
+ *   `tabs.get` (e.g. lives in another Zen workspace). When true, the closure is
+ *   logged as a warning so the user knows a cross-workspace tab was closed.
  * @returns {Promise<void>}
  */
-export async function closeTab(tab, log = true) {
+export async function closeTab(tab, log = true, isHidden = false) {
     if (log) {
-        console.log("Closing tab:", tab.id, tab.title, tab.url);
+        if (isHidden) {
+            console.warn(
+                "Closing hidden tab (likely in another workspace):",
+                tab.id,
+                tab.title,
+                tab.url,
+            );
+        } else {
+            console.log("Closing tab:", tab.id, tab.title, tab.url);
+        }
     }
     try {
         // Add to history first
@@ -155,7 +239,7 @@ export async function closeTab(tab, log = true) {
             closedAt: Date.now(),
         });
 
-        await chrome.tabs.remove(tab.id);
+        await browser.tabs.remove(tab.id);
     } catch (err) {
         console.error(`Failed to close tab ${tab.id}:`, err);
     }
@@ -170,9 +254,9 @@ export async function updateBadge(tabId) {
     try {
         const isProtected = await getTabProtection(tabId);
         const text = isProtected ? "🔒" : "";
-        await chrome.action.setBadgeText({ tabId, text });
+        await browser.action.setBadgeText({ tabId, text });
         if (isProtected) {
-            await chrome.action.setBadgeBackgroundColor({
+            await browser.action.setBadgeBackgroundColor({
                 tabId,
                 color: "#5dc162",
             });
@@ -184,38 +268,30 @@ export async function updateBadge(tabId) {
 
 /**
  * Cleans up storage by removing data for tabs that no longer exist.
+ *
+ * Uses `resolveTrackedTabs()` so that tabs which are merely hidden in another
+ * workspace (and therefore missing from `tabs.query({})`) are NOT treated as
+ * deleted. Only tabs that also fail `tabs.get()` are considered orphaned.
+ *
  * @param {Object} [options]
  * @param {boolean} [options.shouldDelete=false] - Whether to actually remove orphaned keys from storage.
  * @returns {Promise<void>}
  */
 export async function cleanUpStorage({ shouldDelete = false } = {}) {
-    const allData = await chrome.storage.local.get(null);
-    const allKeys = Object.keys(allData);
-    const tabs = await chrome.tabs.query({});
-    const openTabIds = new Set(tabs.map((t) => t.id));
+    const { deletedTabIds, storedData } = await resolveTrackedTabs();
 
     const keysToRemove = [];
-
-    for (const key of allKeys) {
-        let tabId;
-        if (key.startsWith("tab_")) {
-            tabId = parseInt(key.replace("tab_", ""), 10);
-        } else if (key.startsWith("protected_")) {
-            tabId = parseInt(key.replace("protected_", ""), 10);
-        }
-
-        if (tabId && !openTabIds.has(tabId)) {
+    for (const key of Object.keys(storedData)) {
+        const tabId = tabIdFromStorageKey(key);
+        if (tabId !== null && deletedTabIds.has(tabId)) {
             keysToRemove.push(key);
         }
     }
 
     if (keysToRemove.length > 0) {
         console.log("Orphaned keys:", keysToRemove);
-        console.log(
-            "This may be due to workspace switching, the tab may be open but unreachable to the extension"
-        );
         if (shouldDelete) {
-            await chrome.storage.local.remove(keysToRemove);
+            await browser.storage.local.remove(keysToRemove);
         }
     }
 }
@@ -248,15 +324,10 @@ function canInjectContentScript(url) {
  * @param {number} retryDelay - Delay between retries in ms (default: 200)
  * @returns {Promise<void>}
  */
-async function sendMessageWithRetry(
-    tabId,
-    message,
-    maxRetries = 3,
-    retryDelay = 200
-) {
+async function sendMessageWithRetry(tabId, message, maxRetries = 3, retryDelay = 200) {
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
-            await chrome.tabs.sendMessage(tabId, message);
+            await browser.tabs.sendMessage(tabId, message);
             return; // Success
         } catch (err) {
             const isLastAttempt = attempt === maxRetries;
@@ -270,7 +341,7 @@ async function sendMessageWithRetry(
                 if (isLastAttempt) {
                     console.error(
                         "Failed to send message to content script after retries:",
-                        err
+                        err,
                     );
                 }
                 return; // Give up
@@ -289,7 +360,7 @@ async function sendMessageWithRetry(
  */
 export async function handleCommand(command) {
     if (command === "toggle-protection") {
-        const [tab] = await chrome.tabs.query({
+        const [tab] = await browser.tabs.query({
             active: true,
             currentWindow: true,
         });
@@ -313,6 +384,6 @@ export async function handleCommand(command) {
             // Silently skip for pages that don't support content scripts (chrome://, about:, etc.)
         }
     } else if (command === "open-history") {
-        chrome.runtime.openOptionsPage();
+        browser.runtime.openOptionsPage();
     }
 }

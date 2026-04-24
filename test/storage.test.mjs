@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import sinon from "sinon";
 
-import { getDefaults } from "../src/utils/config.js";
+import { getDefaults } from "../utils/config.js";
 
 // Mock browser API
 const chromeMock = {
@@ -21,6 +21,7 @@ const chromeMock = {
 const defaults = getDefaults();
 
 global.chrome = chromeMock;
+global.browser = chromeMock;
 
 // Import after mocking
 import {
@@ -30,11 +31,12 @@ import {
     addExpiredTab,
     clearExpiredTabs,
     removeExpiredTab,
-} from "../src/utils/storage.js";
+} from "../utils/storage.js";
 
 describe("Storage Utils", () => {
     beforeEach(() => {
         global.chrome = chromeMock;
+        global.browser = chromeMock;
         sinon.reset();
     });
 
@@ -84,7 +86,7 @@ describe("Storage Utils", () => {
                     timeout: 45,
                     unit: "days",
                     historyLimit: 50,
-                })
+                }),
             ).to.be.true;
         });
     });
@@ -178,8 +180,8 @@ describe("Storage Utils", () => {
         it("should clear history", async () => {
             chromeMock.storage.local.set.resolves();
             await clearExpiredTabs();
-            expect(chromeMock.storage.local.set.calledWith({ expiredTabs: [] }))
-                .to.be.true;
+            expect(chromeMock.storage.local.set.calledWith({ expiredTabs: [] })).to.be
+                .true;
         });
     });
 });
