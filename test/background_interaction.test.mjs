@@ -4,6 +4,7 @@ import {
     clearStorage,
     getOptionsUrl,
     reloadPage,
+    waitForFunction,
 } from "./testUtils.mjs";
 
 describe("Background Interactions", function () {
@@ -138,7 +139,17 @@ describe("Background Interactions", function () {
         // Close Tab B
         await pageB.close();
 
-        // Verify data removed
+        // Wait for the background's tabs.onRemoved handler to clear the storage key.
+        await waitForFunction(
+            monitorPage,
+            async (id) => {
+                const api = globalThis.browser ?? chrome;
+                const res = await api.storage.local.get([`tab_${id}`]);
+                return !res[`tab_${id}`];
+            },
+            [tabBId],
+        );
+
         const existsAfter = await monitorPage.evaluate(async (id) => {
             const api = globalThis.browser ?? chrome;
             const key = `tab_${id}`;

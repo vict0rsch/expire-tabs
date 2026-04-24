@@ -27,6 +27,13 @@ describe("Popup Settings", function () {
         page = await browser.newPage();
         const popupUrl = await getPopupUrl(browser, extensionId);
         await page.goto(popupUrl, { waitUntil: "networkidle0" });
+        // The save button handler is registered after `await getSettings()` inside
+        // DOMContentLoaded. Wait for the inputs to be populated to confirm the
+        // async setup completed and all listeners are attached.
+        await waitForFunction(page, () => {
+            const v = document.getElementById("timeoutInput")?.value;
+            return v !== undefined && v !== "";
+        });
         await clearStorage(page);
     });
 
