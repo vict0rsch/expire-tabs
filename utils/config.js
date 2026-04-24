@@ -46,8 +46,8 @@ export const msToDuration = (ms) => {
     return ms > 2 * daysMs
         ? Duration.fromMillis(ms).toFormat("d 'days' hh:mm:ss")
         : ms > daysMs
-        ? Duration.fromMillis(ms).toFormat("d 'day' hh:mm:ss")
-        : ms > hoursMs
-        ? Duration.fromMillis(ms).toFormat("h 'hours' mm:ss")
-        : Duration.fromMillis(ms).toFormat("mm:ss");
+          ? Duration.fromMillis(ms).toFormat("d 'day' hh:mm:ss")
+          : ms > hoursMs
+            ? Duration.fromMillis(ms).toFormat("h 'hours' mm:ss")
+            : Duration.fromMillis(ms).toFormat("mm:ss");
 };

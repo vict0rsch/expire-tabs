@@ -22,36 +22,36 @@ This extension was developed in part to add the "close tabs after inactivity" fe
 
 Clicking the extension icon opens the settings popup where you can configure:
 
--   **Timeout**: Set the duration of inactivity after which a tab should close.
-    -   Supports **Minutes**, **Hours**, and **Days**.
--   **History Limit**: Set the maximum number of expired tabs to keep in history.
-    -   Set to `-1` for infinite history.
-    -   Tabs exceeding the limit are removed (oldest first).
--   **View Expired Tabs**: Quick access button to open the full history page.
--   **Protect Tab**: Toggle protection for the currently active tab. Protected tabs (indicated by a 🔒 badge) will **never** be expired.
--   **Expire All Tabs Now**: Immediately close all expirable tabs (tabs that are not pinned, active, audible, or protected).
+- **Timeout**: Set the duration of inactivity after which a tab should close.
+    - Supports **Minutes**, **Hours**, and **Days**.
+- **History Limit**: Set the maximum number of expired tabs to keep in history.
+    - Set to `-1` for infinite history.
+    - Tabs exceeding the limit are removed (oldest first).
+- **View Expired Tabs**: Quick access button to open the full history page.
+- **Protect Tab**: Toggle protection for the currently active tab. Protected tabs (indicated by a 🔒 badge) will **never** be expired.
+- **Expire All Tabs Now**: Immediately close all expirable tabs (tabs that are not pinned, active, audible, or protected).
 
 ### ⌨️ Shortcuts
 
--   **Toggle Protection**: `Alt+Shift+P` (default) - Toggle protection for the current tab. When toggled, a toast notification appears on the page showing "Protected 🔒" (green) or "Unprotected ⏳" (yellow).
--   **Open Popup**: `Alt+Shift+A` (default) - Open the extension popup.
--   **Open History**: `Alt+Shift+H` (default) - Open the history (options) page.
--   **Customize**: You can change these shortcuts in your browser's extension shortcuts settings (`chrome://extensions/shortcuts`).
+- **Toggle Protection**: `Alt+Shift+P` (default) - Toggle protection for the current tab. When toggled, a toast notification appears on the page showing "Protected 🔒" (green) or "Unprotected ⏳" (yellow).
+- **Open Popup**: `Alt+Shift+A` (default) - Open the extension popup.
+- **Open History**: `Alt+Shift+H` (default) - Open the history (options) page.
+- **Customize**: You can change these shortcuts in your browser's extension shortcuts settings (`chrome://extensions/shortcuts`).
 
 ### 📜 History (Options Page)
 
 The options page provides a dashboard for your expired tabs:
 
--   **Search**: Filter history by Title or URL. Multiple terms are treated as "AND" conditions (e.g., "git issue" matches items containing both "git" and "issue").
--   **Copy URL**: One-click button to copy the expired tab's URL to your clipboard.
--   **Delete**: Remove individual items from your history.
--   **Clear History**: Wipe all recorded history.
+- **Search**: Filter history by Title or URL. Multiple terms are treated as "AND" conditions (e.g., "git issue" matches items containing both "git" and "issue").
+- **Copy URL**: One-click button to copy the expired tab's URL to your clipboard.
+- **Delete**: Remove individual items from your history.
+- **Clear History**: Wipe all recorded history.
 
 ### 🧠 Background Behavior
 
--   The extension uses a background service worker to monitor tab activity.
--   It uses `chrome.alarms` to check for expired tabs every minute to minimize resource usage.
--   **Pinned tabs** and tabs **playing audio** are automatically protected and will **not** be closed.
+- The extension uses a background service worker to monitor tab activity.
+- It uses `chrome.alarms` to check for expired tabs every minute to minimize resource usage.
+- **Pinned tabs** and tabs **playing audio** are automatically protected and will **not** be closed.
 
 ## Development
 
@@ -62,11 +62,13 @@ This project supports both Chrome and Firefox. It is mainly vibe-coded because I
 This project uses [Bun](https://bun.sh) as its runtime and package manager for faster performance.
 
 First, install Bun (if you haven't already):
+
 ```bash
 curl -fsSL https://bun.sh/install | bash
 ```
 
 Then:
+
 ```
 git clone https://github.com/vict0rsch/expire-tabs.git
 cd expire-tabs

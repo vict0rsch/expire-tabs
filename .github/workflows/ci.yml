@@ -1,117 +1,117 @@
 name: CI
 
 on:
-    push:
-        branches:
-            - main
-    pull_request:
+  push:
+    branches:
+      - main
+  pull_request:
 
 jobs:
-    install:
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-            - name: Setup Bun
-              uses: oven-sh/setup-bun@v2
-              with:
-                  bun-version: latest
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
 
-            - name: Cache node_modules
-              id: cache-node-modules
-              uses: actions/cache@v4
-              with:
-                  path: node_modules
-                  key: ${{ runner.os }}-bun-node_modules-${{ hashFiles('bun.lock') }}
+      - name: Cache node_modules
+        id: cache-node-modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-bun-node_modules-${{ hashFiles('bun.lock') }}
 
-            - name: Install dependencies
-              if: steps.cache-node-modules.outputs.cache-hit != 'true'
-              run: bun install
+      - name: Install dependencies
+        if: steps.cache-node-modules.outputs.cache-hit != 'true'
+        run: bun install
 
-            - name: Install Puppeteer Browsers
-              run: bunx puppeteer browsers install chrome
+      - name: Install Puppeteer Browsers
+        run: bunx puppeteer browsers install chrome
 
-    build:
-        needs: install
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
+  build:
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-            - name: Setup Bun
-              uses: oven-sh/setup-bun@v2
-              with:
-                  bun-version: latest
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
 
-            - name: Restore node_modules
-              id: cache-node-modules
-              uses: actions/cache@v4
-              with:
-                  path: node_modules
-                  key: ${{ runner.os }}-bun-node_modules-${{ hashFiles('bun.lock') }}
+      - name: Restore node_modules
+        id: cache-node-modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-bun-node_modules-${{ hashFiles('bun.lock') }}
 
-            - name: Install dependencies
-              if: steps.cache-node-modules.outputs.cache-hit != 'true'
-              run: bun install
+      - name: Install dependencies
+        if: steps.cache-node-modules.outputs.cache-hit != 'true'
+        run: bun install
 
-            - name: Build
-              run: bun run build
+      - name: Build
+        run: bun run build
 
-    test-chrome:
-        needs: build
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
+  test-chrome:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-            - name: Setup Bun
-              uses: oven-sh/setup-bun@v2
-              with:
-                  bun-version: latest
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
 
-            - name: Restore node_modules
-              id: cache-node-modules
-              uses: actions/cache@v4
-              with:
-                  path: node_modules
-                  key: ${{ runner.os }}-bun-node_modules-${{ hashFiles('bun.lock') }}
+      - name: Restore node_modules
+        id: cache-node-modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-bun-node_modules-${{ hashFiles('bun.lock') }}
 
-            - name: Install dependencies
-              if: steps.cache-node-modules.outputs.cache-hit != 'true'
-              run: bun install
+      - name: Install dependencies
+        if: steps.cache-node-modules.outputs.cache-hit != 'true'
+        run: bun install
 
-            - name: Install Puppeteer Browsers
-              run: bunx puppeteer browsers install chrome
+      - name: Install Puppeteer Browsers
+        run: bunx puppeteer browsers install chrome
 
-            - name: Test
-              run: bun run test
+      - name: Test
+        run: bun run test
 
-    test-firefox:
-        needs: build
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
+  test-firefox:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-            - name: Setup Bun
-              uses: oven-sh/setup-bun@v2
-              with:
-                  bun-version: latest
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
 
-            - name: Restore node_modules
-              id: cache-node-modules
-              uses: actions/cache@v4
-              with:
-                  path: node_modules
-                  key: ${{ runner.os }}-bun-node_modules-${{ hashFiles('bun.lock') }}
+      - name: Restore node_modules
+        id: cache-node-modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-bun-node_modules-${{ hashFiles('bun.lock') }}
 
-            - name: Install dependencies
-              if: steps.cache-node-modules.outputs.cache-hit != 'true'
-              run: bun install
+      - name: Install dependencies
+        if: steps.cache-node-modules.outputs.cache-hit != 'true'
+        run: bun install
 
-            - name: Install Puppeteer Browsers
-              run: bunx puppeteer browsers install firefox
+      - name: Install Puppeteer Browsers
+        run: bunx puppeteer browsers install firefox
 
-            - name: Test
-              run: browser=firefox bun run test
+      - name: Test
+        run: browser=firefox bun run test

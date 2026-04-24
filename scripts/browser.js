@@ -3,10 +3,7 @@ const fs = await import("fs");
 const path = await import("path");
 
 const currentDirectory = process.cwd();
-const testDataPath = path.join(
-    currentDirectory,
-    "../test/expired-tabs-test-data.json"
-);
+const testDataPath = path.join(currentDirectory, "../test/expired-tabs-test-data.json");
 const { expiredTabs } = JSON.parse(fs.readFileSync(testDataPath, "utf8"));
 
 const { browser, extensionId } = await launchBrowser({

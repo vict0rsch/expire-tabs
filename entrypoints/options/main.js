@@ -75,7 +75,7 @@ const setupObserver = () => {
                 root: null, // viewport
                 rootMargin: "0px",
                 threshold: 0.1,
-            }
+            },
         );
 
         observer.observe(target);
@@ -86,7 +86,7 @@ const renderNextBatch = () => {
     const list = document.getElementById("history-list");
     const nextBatch = currentTabsToRender.slice(
         renderedCount,
-        renderedCount + defaults.batchSize
+        renderedCount + defaults.batchSize,
     );
 
     if (nextBatch.length === 0) return;
@@ -230,22 +230,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     await loadAndRender();
 
     // Event delegation for list items
-    document
-        .getElementById("history-list")
-        .addEventListener("click", handleListClick);
+    document.getElementById("history-list").addEventListener("click", handleListClick);
 
-    document
-        .getElementById("downloadHistory")
-        .addEventListener("click", async () => {
-            const data = await browser.storage.local.get();
-            const dataJson = JSON.stringify(data, null, 2);
-            const blob = new Blob([dataJson], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `expired-tabs-data-${new Date().toJSON()}.json`;
-            a.click();
-        });
+    document.getElementById("downloadHistory").addEventListener("click", async () => {
+        const data = await browser.storage.local.get();
+        const dataJson = JSON.stringify(data, null, 2);
+        const blob = new Blob([dataJson], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `expired-tabs-data-${new Date().toJSON()}.json`;
+        a.click();
+    });
 
     document.getElementById("search").addEventListener("input", (e) => {
         filterTabs(e.target.value);
@@ -253,31 +249,28 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     ["deleteOlderThan", "unit"].forEach((id) => {
         ["input", "change"].forEach((eventType) => {
-            document
-                .getElementById(id)
-                .addEventListener(eventType, async () => {
-                    const value = parseInt(
-                        document.getElementById("deleteOlderThan").value,
-                        10
-                    );
-                    const unit = document.getElementById("unit").value;
-                    const oldEntries = await getOldEntries({ value, unit });
-                    document.getElementById("deleteOlderThanButton").disabled =
-                        oldEntries.length === 0 ? true : false;
-                    document.getElementById("oldEntriesCount").textContent =
-                        oldEntries.length;
-                });
+            document.getElementById(id).addEventListener(eventType, async () => {
+                const value = parseInt(
+                    document.getElementById("deleteOlderThan").value,
+                    10,
+                );
+                const unit = document.getElementById("unit").value;
+                const oldEntries = await getOldEntries({ value, unit });
+                document.getElementById("deleteOlderThanButton").disabled =
+                    oldEntries.length === 0 ? true : false;
+                document.getElementById("oldEntriesCount").textContent =
+                    oldEntries.length;
+            });
         });
     });
 
     document
         .getElementById("deleteSearchResults")
         .addEventListener("click", async () => {
-            const resultsCount =
-                document.getElementById("results-count").textContent;
+            const resultsCount = document.getElementById("results-count").textContent;
             if (
                 confirm(
-                    `Are you sure you want to delete ${resultsCount} search results?`
+                    `Are you sure you want to delete ${resultsCount} search results?`,
                 )
             ) {
                 await deleteSearchResults();
@@ -290,19 +283,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         .addEventListener("click", async () => {
             const value = parseInt(
                 document.getElementById("deleteOlderThan").value,
-                10
+                10,
             );
             const unit = document.getElementById("unit").value;
             const oldEntries = await getOldEntries({ value, unit });
             if (oldEntries.length === 0) {
-                alert(
-                    `No entries found to delete older than ${value} ${unit}.`
-                );
+                alert(`No entries found to delete older than ${value} ${unit}.`);
                 return;
             }
             if (
                 confirm(
-                    `Are you sure you want to delete ${oldEntries.length} older than ${value} ${unit}?`
+                    `Are you sure you want to delete ${oldEntries.length} older than ${value} ${unit}?`,
                 )
             ) {
                 for (const entry of oldEntries) {

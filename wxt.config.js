@@ -13,8 +13,7 @@ export default defineConfig({
     // WXT defaults: Chrome MV3, Firefox MV2
     manifest: ({ browser }) => ({
         name: "Expire Tabs",
-        description:
-            "Automatically closes tabs that haven't been focused for a while.",
+        description: "Automatically closes tabs that haven't been focused for a while.",
         permissions: ["tabs", "storage", "alarms"],
         options_ui: { open_in_tab: true },
         commands: {

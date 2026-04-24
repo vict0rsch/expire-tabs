@@ -86,7 +86,7 @@ describe("Storage Utils", () => {
                     timeout: 45,
                     unit: "days",
                     historyLimit: 50,
-                })
+                }),
             ).to.be.true;
         });
     });
@@ -180,8 +180,8 @@ describe("Storage Utils", () => {
         it("should clear history", async () => {
             chromeMock.storage.local.set.resolves();
             await clearExpiredTabs();
-            expect(chromeMock.storage.local.set.calledWith({ expiredTabs: [] }))
-                .to.be.true;
+            expect(chromeMock.storage.local.set.calledWith({ expiredTabs: [] })).to.be
+                .true;
         });
     });
 });

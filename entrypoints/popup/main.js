@@ -97,11 +97,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 return;
             }
 
-            if (
-                isNaN(historyLimit) ||
-                historyLimit < -1 ||
-                historyLimit === 0
-            ) {
+            if (isNaN(historyLimit) || historyLimit < -1 || historyLimit === 0) {
                 elements.statusMsg.textContent = "Invalid limit.";
                 elements.statusMsg.classList.add("error");
                 return;
@@ -139,7 +135,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Open history
     if (elements.historyBtn) {
         elements.historyBtn.addEventListener("click", () =>
-            browser.runtime.openOptionsPage()
+            browser.runtime.openOptionsPage(),
         );
     }
 });

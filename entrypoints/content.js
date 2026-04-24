@@ -136,7 +136,7 @@ export default defineContentScript({
             if (message.type === "protection-status") {
                 showToast(
                     message.isProtected ? "Protected 🔒" : "Unprotected ⏳",
-                    message.isProtected
+                    message.isProtected,
                 );
             }
         });

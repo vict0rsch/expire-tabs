@@ -70,8 +70,7 @@ describe("Background Logic", () => {
                 .resolves({ expiredTabs: [] });
 
             const now = Date.now();
-            const expiredTime =
-                now - (defaults.timeout + 1) * defaultUnitMultiplier;
+            const expiredTime = now - (defaults.timeout + 1) * defaultUnitMultiplier;
 
             // Mock tabs
             const tabs = [
@@ -135,12 +134,9 @@ describe("Background Logic", () => {
 
         it("should not close protected tabs", async () => {
             const now = Date.now();
-            const expiredTime =
-                now - (defaults.timeout + 1) * defaultUnitMultiplier;
+            const expiredTime = now - (defaults.timeout + 1) * defaultUnitMultiplier;
 
-            const tabs = [
-                { id: 1, active: false, pinned: false, audible: false },
-            ];
+            const tabs = [{ id: 1, active: false, pinned: false, audible: false }];
             chromeMock.tabs.query.resolves(tabs);
 
             const storageData = {
@@ -168,8 +164,7 @@ describe("Background Logic", () => {
 
         it("should close expired tabs in other workspaces (Zen/Firefox bug)", async () => {
             const now = Date.now();
-            const expiredTime =
-                now - (defaults.timeout + 1) * defaultUnitMultiplier;
+            const expiredTime = now - (defaults.timeout + 1) * defaultUnitMultiplier;
 
             // Only tab 1 is in the current workspace; tab 99 is in another
             // workspace and only reachable via tabs.get, but it has an expired
@@ -223,8 +218,7 @@ describe("Background Logic", () => {
 
         it("should NOT close hidden tabs that are pinned/audible/active", async () => {
             const now = Date.now();
-            const expiredTime =
-                now - (defaults.timeout + 1) * defaultUnitMultiplier;
+            const expiredTime = now - (defaults.timeout + 1) * defaultUnitMultiplier;
 
             chromeMock.tabs.query.resolves([]);
 
@@ -317,7 +311,7 @@ describe("Background Logic", () => {
                 chromeMock.action.setBadgeText.calledWith({
                     tabId: 123,
                     text: "🔒",
-                })
+                }),
             ).to.be.true;
         });
 
@@ -330,7 +324,7 @@ describe("Background Logic", () => {
                 chromeMock.action.setBadgeText.calledWith({
                     tabId: 123,
                     text: "",
-                })
+                }),
             ).to.be.true;
         });
     });
@@ -373,8 +367,7 @@ describe("Background Logic", () => {
             expect(chromeMock.tabs.query.calledOnce).to.be.true;
 
             expect(chromeMock.storage.local.remove.calledOnce).to.be.true;
-            const keysRemoved =
-                chromeMock.storage.local.remove.firstCall.args[0];
+            const keysRemoved = chromeMock.storage.local.remove.firstCall.args[0];
             expect(keysRemoved).to.include("tab_2");
             expect(keysRemoved).to.include("protected_2");
 
@@ -418,8 +411,7 @@ describe("Background Logic", () => {
             await cleanUpStorage({ shouldDelete: true });
 
             expect(chromeMock.storage.local.remove.calledOnce).to.be.true;
-            const keysRemoved =
-                chromeMock.storage.local.remove.firstCall.args[0];
+            const keysRemoved = chromeMock.storage.local.remove.firstCall.args[0];
             // Only tab 3 keys should be removed
             expect(keysRemoved).to.include("tab_3");
             expect(keysRemoved).to.not.include("tab_1");
@@ -432,9 +424,7 @@ describe("Background Logic", () => {
         it("should toggle protection ON when tab is unprotected", async () => {
             const tabId = 101;
             chromeMock.tabs.query.resolves([{ id: tabId }]);
-            chromeMock.storage.local.get
-                .withArgs([`protected_${tabId}`])
-                .resolves({});
+            chromeMock.storage.local.get.withArgs([`protected_${tabId}`]).resolves({});
 
             await handleCommand("toggle-protection");
 
@@ -442,7 +432,7 @@ describe("Background Logic", () => {
             expect(
                 chromeMock.storage.local.set.calledWith({
                     [`protected_${tabId}`]: true,
-                })
+                }),
             ).to.be.true;
         });
 
@@ -456,9 +446,8 @@ describe("Background Logic", () => {
             await handleCommand("toggle-protection");
 
             // Should remove protected_102
-            expect(
-                chromeMock.storage.local.remove.calledWith(`protected_${tabId}`)
-            ).to.be.true;
+            expect(chromeMock.storage.local.remove.calledWith(`protected_${tabId}`)).to
+                .be.true;
             // Should update timestamp (tab_102)
             const setCall = chromeMock.storage.local.set
                 .getCalls()
@@ -486,19 +475,66 @@ describe("Background Logic", () => {
     describe("expireAllTabs", () => {
         it("should close all expirable tabs (expired + mayExpire + orphan)", async () => {
             const now = Date.now();
-            const expiredTime =
-                now - (defaults.timeout + 1) * defaultUnitMultiplier;
-            const recentTime =
-                now - (defaults.timeout - 1) * defaultUnitMultiplier;
+            const expiredTime = now - (defaults.timeout + 1) * defaultUnitMultiplier;
+            const recentTime = now - (defaults.timeout - 1) * defaultUnitMultiplier;
 
             const tabs = [
-                { id: 1, active: false, pinned: true, audible: false, title: "Pinned", url: "http://pinned.com" },
-                { id: 2, active: false, pinned: false, audible: true, title: "Audible", url: "http://audible.com" },
-                { id: 3, active: true, pinned: false, audible: false, title: "Active", url: "http://active.com" },
-                { id: 4, active: false, pinned: false, audible: false, title: "Protected", url: "http://protected.com" },
-                { id: 5, active: false, pinned: false, audible: false, title: "Expired", url: "http://expired.com" },
-                { id: 6, active: false, pinned: false, audible: false, title: "MayExpire", url: "http://mayexpire.com" },
-                { id: 7, active: false, pinned: false, audible: false, title: "Orphan", url: "http://orphan.com" },
+                {
+                    id: 1,
+                    active: false,
+                    pinned: true,
+                    audible: false,
+                    title: "Pinned",
+                    url: "http://pinned.com",
+                },
+                {
+                    id: 2,
+                    active: false,
+                    pinned: false,
+                    audible: true,
+                    title: "Audible",
+                    url: "http://audible.com",
+                },
+                {
+                    id: 3,
+                    active: true,
+                    pinned: false,
+                    audible: false,
+                    title: "Active",
+                    url: "http://active.com",
+                },
+                {
+                    id: 4,
+                    active: false,
+                    pinned: false,
+                    audible: false,
+                    title: "Protected",
+                    url: "http://protected.com",
+                },
+                {
+                    id: 5,
+                    active: false,
+                    pinned: false,
+                    audible: false,
+                    title: "Expired",
+                    url: "http://expired.com",
+                },
+                {
+                    id: 6,
+                    active: false,
+                    pinned: false,
+                    audible: false,
+                    title: "MayExpire",
+                    url: "http://mayexpire.com",
+                },
+                {
+                    id: 7,
+                    active: false,
+                    pinned: false,
+                    audible: false,
+                    title: "Orphan",
+                    url: "http://orphan.com",
+                },
             ];
             chromeMock.tabs.query.resolves(tabs);
             chromeMock.tabs.remove.resolves();
@@ -516,7 +552,10 @@ describe("Background Logic", () => {
             chromeMock.storage.local.get.callsFake((keys) => {
                 if (keys === null) return Promise.resolve(storageData);
                 if (Array.isArray(keys) && keys.includes("timeout"))
-                    return Promise.resolve({ timeout: defaults.timeout, unit: defaults.unit });
+                    return Promise.resolve({
+                        timeout: defaults.timeout,
+                        unit: defaults.unit,
+                    });
                 if (Array.isArray(keys) && keys.includes("expiredTabs"))
                     return Promise.resolve({ expiredTabs: [] });
                 return Promise.resolve({});
@@ -538,15 +577,32 @@ describe("Background Logic", () => {
 
         it("should return 0 when no expirable tabs exist", async () => {
             const tabs = [
-                { id: 1, active: true, pinned: false, audible: false, title: "Active", url: "http://active.com" },
-                { id: 2, active: false, pinned: true, audible: false, title: "Pinned", url: "http://pinned.com" },
+                {
+                    id: 1,
+                    active: true,
+                    pinned: false,
+                    audible: false,
+                    title: "Active",
+                    url: "http://active.com",
+                },
+                {
+                    id: 2,
+                    active: false,
+                    pinned: true,
+                    audible: false,
+                    title: "Pinned",
+                    url: "http://pinned.com",
+                },
             ];
             chromeMock.tabs.query.resolves(tabs);
 
             chromeMock.storage.local.get.callsFake((keys) => {
                 if (keys === null) return Promise.resolve({});
                 if (Array.isArray(keys) && keys.includes("timeout"))
-                    return Promise.resolve({ timeout: defaults.timeout, unit: defaults.unit });
+                    return Promise.resolve({
+                        timeout: defaults.timeout,
+                        unit: defaults.unit,
+                    });
                 return Promise.resolve({});
             });
 
@@ -562,7 +618,10 @@ describe("Background Logic", () => {
             chromeMock.storage.local.get.callsFake((keys) => {
                 if (keys === null) return Promise.resolve({});
                 if (Array.isArray(keys) && keys.includes("timeout"))
-                    return Promise.resolve({ timeout: defaults.timeout, unit: defaults.unit });
+                    return Promise.resolve({
+                        timeout: defaults.timeout,
+                        unit: defaults.unit,
+                    });
                 return Promise.resolve({});
             });
 
@@ -576,10 +635,8 @@ describe("Background Logic", () => {
     describe("getTabsStatus", () => {
         it("should correctly categorize tabs based on status and priority", async () => {
             const now = Date.now();
-            const expiredTime =
-                now - (defaults.timeout + 1) * defaultUnitMultiplier;
-            const recentTime =
-                now - (defaults.timeout - 1) * defaultUnitMultiplier;
+            const expiredTime = now - (defaults.timeout + 1) * defaultUnitMultiplier;
+            const recentTime = now - (defaults.timeout - 1) * defaultUnitMultiplier;
 
             // Create tabs with conflicting states to test priority
             // Priority: Pinned > Audible > Active > Protected > Expired/MayExpire > Orphan
@@ -708,8 +765,7 @@ describe("Background Logic", () => {
 
             try {
                 const now = Date.now();
-                const exactTimeoutTime =
-                    now - defaults.timeout * defaultUnitMultiplier;
+                const exactTimeoutTime = now - defaults.timeout * defaultUnitMultiplier;
 
                 const tabs = [
                     {
@@ -781,10 +837,8 @@ describe("Background Logic", () => {
 
         it("should include hidden cross-workspace tabs and expose hiddenTabIds", async () => {
             const now = Date.now();
-            const expiredTime =
-                now - (defaults.timeout + 1) * defaultUnitMultiplier;
-            const recentTime =
-                now - (defaults.timeout - 1) * defaultUnitMultiplier;
+            const expiredTime = now - (defaults.timeout + 1) * defaultUnitMultiplier;
+            const recentTime = now - (defaults.timeout - 1) * defaultUnitMultiplier;
 
             // One visible tab and two hidden tabs (different workspaces)
             chromeMock.tabs.query.resolves([

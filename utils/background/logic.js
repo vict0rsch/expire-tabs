@@ -62,9 +62,7 @@ export async function resolveTrackedTabs() {
 
     if (candidateIds.size > 0) {
         const ids = [...candidateIds];
-        const results = await Promise.allSettled(
-            ids.map((id) => browser.tabs.get(id)),
-        );
+        const results = await Promise.allSettled(ids.map((id) => browser.tabs.get(id)));
         for (let i = 0; i < results.length; i++) {
             const result = results[i];
             if (result.status === "fulfilled" && result.value) {
@@ -135,9 +133,7 @@ export async function displayTabsStatus() {
             });
             if (key === "mayExpire") {
                 displays.sort(
-                    (a, b) =>
-                        storedData[getTabKey(a.id)] -
-                        storedData[getTabKey(b.id)],
+                    (a, b) => storedData[getTabKey(a.id)] - storedData[getTabKey(b.id)],
                 );
             }
             console.log(displays);
@@ -328,12 +324,7 @@ function canInjectContentScript(url) {
  * @param {number} retryDelay - Delay between retries in ms (default: 200)
  * @returns {Promise<void>}
  */
-async function sendMessageWithRetry(
-    tabId,
-    message,
-    maxRetries = 3,
-    retryDelay = 200,
-) {
+async function sendMessageWithRetry(tabId, message, maxRetries = 3, retryDelay = 200) {
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
             await browser.tabs.sendMessage(tabId, message);
