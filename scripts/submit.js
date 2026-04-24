@@ -4,10 +4,10 @@ import path from "path";
 const ROOT = path.join(__dirname, "..");
 
 const main = async () => {
-    const package = JSON.parse(
+    const packageData = JSON.parse(
         fs.readFileSync(path.join(ROOT, "package.json"), "utf8"),
     );
-    const version = package.version;
+    const version = packageData.version;
 
     const chromeZipWithVersion = path.join(
         ROOT,
@@ -23,13 +23,19 @@ const main = async () => {
     );
 
     if (!fs.existsSync(chromeZipWithVersion)) {
-        throw new Error("Chrome zip not found, run $ bun run zip");
+        throw new Error(
+            `Chrome zip not found at ${chromeZipWithVersion}, run $ bun run zip`,
+        );
     }
     if (!fs.existsSync(firefoxZipWithVersion)) {
-        throw new Error("Firefox zip not found, run $ bun run zip");
+        throw new Error(
+            `Firefox zip not found at ${firefoxZipWithVersion}, run $ bun run zip`,
+        );
     }
     if (!fs.existsSync(firefoxSourceWithVersion)) {
-        throw new Error("Firefox source zip not found, run $ bun run zip");
+        throw new Error(
+            `Firefox source zip not found at ${firefoxSourceWithVersion}, run $ bun run zip`,
+        );
     }
 
     console.log("Chrome zip found");
