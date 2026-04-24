@@ -1,0 +1,50 @@
+import fs from "fs";
+import path from "path";
+
+const ROOT = path.join(__dirname, "..");
+
+const main = async () => {
+    const package = JSON.parse(
+        fs.readFileSync(path.join(ROOT, "package.json"), "utf8"),
+    );
+    const version = package.version;
+
+    const chromeZipWithVersion = path.join(
+        ROOT,
+        `dist/chrome-mv3/expire-tabs-${version}.zip`,
+    );
+    const firefoxZipWithVersion = path.join(
+        ROOT,
+        `dist/firefox-mv2/expire-tabs-${version}.zip`,
+    );
+    const firefoxSourceWithVersion = path.join(
+        ROOT,
+        `dist/firefox-mv2/expire-tabs-${version}.source.zip`,
+    );
+
+    if (!fs.existsSync(chromeZipWithVersion)) {
+        throw new Error("Chrome zip not found, run $ bun run zip");
+    }
+    if (!fs.existsSync(firefoxZipWithVersion)) {
+        throw new Error("Firefox zip not found, run $ bun run zip");
+    }
+    if (!fs.existsSync(firefoxSourceWithVersion)) {
+        throw new Error("Firefox source zip not found, run $ bun run zip");
+    }
+
+    console.log("Chrome zip found");
+    console.log(`${chromeZipWithVersion}`);
+    console.log("Firefox zip found");
+    console.log(`${firefoxZipWithVersion}`);
+    console.log("Firefox source zip found");
+    console.log(`${firefoxSourceWithVersion}`);
+
+    // subprocess command:
+    const subprocess = await exec(
+        `cd ${ROOT} && ./node_modules/.bin/publish-extension submit --firefox-zip ${firefoxZipWithVersion} --firefox-sources-zip ${firefoxSourceWithVersion} --chrome-zip ${chromeZipWithVersion}`,
+    );
+    console.log(subprocess.stdout);
+    console.log(subprocess.stderr);
+};
+
+main();

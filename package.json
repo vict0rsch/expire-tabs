@@ -28,7 +28,8 @@
         "test:both": "concurrently 'bunx mocha test/**/*.mjs' 'browser=firefox bunx mocha test/**/*.mjs'",
         "pretest:glob": "bun run build",
         "test:glob": "bunx mocha",
-        "format": "prettier --write ."
+        "format": "prettier --write .",
+        "submit": "bun run scripts/submit.js"
     },
     "devDependencies": {
         "@prefresh/core": "^1.5.9",
