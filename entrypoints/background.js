@@ -15,6 +15,7 @@ const mainRoutine = async () => {
     await cleanUpStorage();
     await displayTabsStatus();
     await checkTabs();
+    console.log("--------------------------------");
 };
 
 export default defineBackground(() => {
