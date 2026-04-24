@@ -5,6 +5,8 @@ import {
     setTabProtection,
 } from "../../utils/storage.js";
 
+const VERSION = browser.runtime.getManifest().version;
+
 document.addEventListener("DOMContentLoaded", async () => {
     const elements = {};
     for (const id of [
@@ -18,11 +20,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         "expireAllBtn",
         "helpIcon",
         "helpModal",
+        "modalVersion",
     ]) {
         elements[id] = document.getElementById(id);
         if (!elements[id]) {
             console.error(`Element with id ${id} not found`);
         }
+    }
+
+    if (elements.modalVersion) {
+        elements.modalVersion.textContent = `v${VERSION}`;
     }
 
     if (elements.helpIcon && elements.helpModal) {

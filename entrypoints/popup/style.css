@@ -151,3 +151,11 @@ body {
     margin-bottom: 10px;
     font-size: 0.9rem;
 }
+
+#modalVersion {
+    position: fixed;
+    bottom: 8px;
+    right: 8px;
+    color: #52557a;
+    font-family: "Quicksand";
+}
