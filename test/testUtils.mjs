@@ -141,42 +141,44 @@ export const getChromeExtensionId = async (browser) => {
 
 export const getFirefoxExtensionId = async (browser) => {
     const extensionPage = await browser.newPage();
-    await extensionPage.goto("about:debugging#/runtime/this-firefox", {
-        waitUntil: "networkidle0",
-    });
-    const manifest = JSON.parse(
-        fs.readFileSync(
-            path.join(getExtensionPath("firefox"), "manifest.json"),
-            "utf-8",
-        ),
-    );
-    const manifestId = manifest.browser_specific_settings.gecko.id;
-    // about:debugging renders cards async — networkidle0 may fire before they
-    // appear. We can't use puppeteer's waitForFunction here because it injects
-    // a `Function()` call which is blocked by about:debugging's CSP. Poll via
-    // evaluate() (CSP-safe) instead.
-    await waitForFunction(
-        extensionPage,
-        (id) =>
-            [
-                ...document.querySelectorAll(
-                    ".debug-target-item.qa-debug-target-item",
-                ),
-            ].some((c) => c.textContent.includes(id)),
-        [manifestId],
-        10000,
-    );
-    const extensionId = await extensionPage.evaluate((manifestId) => {
-        const extensionCard = [
-            ...document.querySelectorAll(".debug-target-item.qa-debug-target-item"),
-        ].find((card) => card.textContent.includes(manifestId));
-        return [...extensionCard.querySelectorAll(".fieldpair")]
-            .find((div) => div.textContent.includes("Internal UUID"))
-            .querySelector("dd")
-            .textContent.trim();
-    }, manifestId);
-    await extensionPage.close();
-    return extensionId;
+    try {
+        await extensionPage.goto("about:debugging#/runtime/this-firefox", {
+            waitUntil: "networkidle0",
+        });
+        const manifest = JSON.parse(
+            fs.readFileSync(
+                path.join(getExtensionPath("firefox"), "manifest.json"),
+                "utf-8",
+            ),
+        );
+        const manifestId = manifest.browser_specific_settings.gecko.id;
+        // about:debugging renders cards async — networkidle0 may fire before they
+        // appear. We can't use puppeteer's waitForFunction here because it injects
+        // a `Function()` call which is blocked by about:debugging's CSP. Poll via
+        // evaluate() (CSP-safe) instead.
+        await waitForFunction(
+            extensionPage,
+            (id) =>
+                [
+                    ...document.querySelectorAll(
+                        ".debug-target-item.qa-debug-target-item",
+                    ),
+                ].some((c) => c.textContent.includes(id)),
+            [manifestId],
+            10000,
+        );
+        return await extensionPage.evaluate((manifestId) => {
+            const extensionCard = [
+                ...document.querySelectorAll(".debug-target-item.qa-debug-target-item"),
+            ].find((card) => card.textContent.includes(manifestId));
+            return [...extensionCard.querySelectorAll(".fieldpair")]
+                .find((div) => div.textContent.includes("Internal UUID"))
+                .querySelector("dd")
+                .textContent.trim();
+        }, manifestId);
+    } finally {
+        await extensionPage.close();
+    }
 };
 
 /**
