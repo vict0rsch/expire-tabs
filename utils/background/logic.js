@@ -9,21 +9,35 @@ import {
 import { msToDuration } from "../config.js";
 
 /**
- * Extracts the numeric tab id from a `tab_<id>` or `protected_<id>` storage key.
+ * Extracts tab metadata from a `tab_<id>` or `protected_<id>` storage key.
  * @param {string} key
- * @returns {number|null} The tab id, or null if the key is not tab-scoped.
+ * @returns {{ tabId: number|null, isTabScoped: boolean, isValidTabId: boolean }}
  */
-function tabIdFromStorageKey(key) {
+function tabInfoFromStorageKey(key) {
     let raw;
     if (key.startsWith("tab_")) {
         raw = key.slice("tab_".length);
     } else if (key.startsWith("protected_")) {
         raw = key.slice("protected_".length);
     } else {
-        return null;
+        return { tabId: null, isTabScoped: false, isValidTabId: false };
     }
-    const id = parseInt(raw, 10);
-    return Number.isNaN(id) ? null : id;
+    const id = Number(raw);
+    const isValidTabId = Number.isInteger(id) && id >= 0 && String(id) === raw;
+    return {
+        tabId: isValidTabId ? id : null,
+        isTabScoped: true,
+        isValidTabId,
+    };
+}
+
+/**
+ * Extracts the numeric tab id from a valid `tab_<id>` or `protected_<id>` storage key.
+ * @param {string} key
+ * @returns {number|null} The tab id, or null if the key is not valid tab-scoped storage.
+ */
+function tabIdFromStorageKey(key) {
+    return tabInfoFromStorageKey(key).tabId;
 }
 
 /**
@@ -50,8 +64,13 @@ export async function resolveTrackedTabs() {
     const visibleIds = new Set(visibleTabs.map((t) => t.id));
 
     const candidateIds = new Set();
+    const invalidStorageKeys = [];
     for (const key of Object.keys(storedData)) {
-        const tabId = tabIdFromStorageKey(key);
+        const tabInfo = tabInfoFromStorageKey(key);
+        if (tabInfo.isTabScoped && !tabInfo.isValidTabId) {
+            invalidStorageKeys.push(key);
+        }
+        const { tabId } = tabInfo;
         if (tabId !== null && !visibleIds.has(tabId)) {
             candidateIds.add(tabId);
         }
@@ -73,7 +92,7 @@ export async function resolveTrackedTabs() {
         }
     }
 
-    return { visibleTabs, hiddenTabs, deletedTabIds, storedData };
+    return { visibleTabs, hiddenTabs, deletedTabIds, invalidStorageKeys, storedData };
 }
 
 /**
@@ -278,9 +297,9 @@ export async function updateBadge(tabId) {
  * @returns {Promise<void>}
  */
 export async function cleanUpStorage({ shouldDelete = false } = {}) {
-    const { deletedTabIds, storedData } = await resolveTrackedTabs();
+    const { deletedTabIds, invalidStorageKeys, storedData } = await resolveTrackedTabs();
 
-    const keysToRemove = [];
+    const keysToRemove = [...invalidStorageKeys];
     for (const key of Object.keys(storedData)) {
         const tabId = tabIdFromStorageKey(key);
         if (tabId !== null && deletedTabIds.has(tabId)) {
@@ -290,8 +309,11 @@ export async function cleanUpStorage({ shouldDelete = false } = {}) {
 
     if (keysToRemove.length > 0) {
         console.log("Orphaned keys:", keysToRemove);
-        if (shouldDelete) {
-            await browser.storage.local.remove(keysToRemove);
+        const keysToActuallyRemove = shouldDelete
+            ? keysToRemove
+            : invalidStorageKeys;
+        if (keysToActuallyRemove.length > 0) {
+            await browser.storage.local.remove(keysToActuallyRemove);
         }
     }
 }

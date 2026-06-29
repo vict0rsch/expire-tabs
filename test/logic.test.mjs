@@ -376,6 +376,26 @@ describe("Background Logic", () => {
             expect(keysRemoved).to.not.include("other_key");
         });
 
+        it("should remove invalid tab-scoped keys without calling tabs.get", async () => {
+            chromeMock.tabs.query.resolves([{ id: 1 }]);
+
+            const storageData = {
+                tab_1: 123456,
+                "tab_-1": 123456,
+                "protected_-1": true,
+                other_key: "value",
+            };
+            chromeMock.storage.local.get.resolves(storageData);
+            chromeMock.storage.local.remove.resolves();
+
+            await cleanUpStorage();
+
+            expect(chromeMock.tabs.get.called).to.be.false;
+            expect(chromeMock.storage.local.remove.calledOnce).to.be.true;
+            const keysRemoved = chromeMock.storage.local.remove.firstCall.args[0];
+            expect(keysRemoved).to.have.members(["tab_-1", "protected_-1"]);
+        });
+
         it("should do nothing if all tabs exist", async () => {
             chromeMock.tabs.query.resolves([{ id: 1 }]);
 
